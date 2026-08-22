@@ -373,11 +373,12 @@ body {
 .google-map { width:100%; height:100%; min-height:300px; border:0; display:block; transition:filter 0.2s ease; }
 .bus-simulation { position:absolute; inset:0; z-index:2; pointer-events:none; display:none; }
 .bus-simulation.active { display:block; }
-.bus-marker { position:absolute; left:10%; top:42%; transform:translate(-50%,-50%); transition:left 10s linear; }
-.bus-marker.moving { left:78%; }
+.bus-marker { position:absolute; left:10%; top:42%; transform:translate(-50%,-50%); }
 .bus-badge { display:flex; align-items:center; gap:5px; padding:6px 9px; border-radius:18px; background:#FF6B2B; color:#fff; box-shadow:0 3px 12px #FF6B2B66; font:700 10px 'JetBrains Mono',monospace; white-space:nowrap; }
 .bus-pulse-map { position:absolute; width:34px; height:34px; left:50%; top:50%; transform:translate(-50%,-50%); border:2px solid #FF6B2B; border-radius:50%; animation:mapPulse 1.8s infinite; }
 .destination-marker { position:absolute; right:20%; top:42%; transform:translate(50%,-100%); color:#1A3A6B; text-align:center; font-size:22px; }
+.origin-marker { position:absolute; left:10%; top:58%; transform:translate(-50%,0); color:#64748B; text-align:center; font-size:18px; }
+.origin-label { display:block; margin-top:2px; padding:3px 6px; border-radius:6px; background:#fff; box-shadow:0 2px 8px #1A3A6B22; font:700 9px 'Plus Jakarta Sans',sans-serif; white-space:nowrap; }
 .destination-label { display:block; margin-top:2px; padding:3px 6px; border-radius:6px; background:#fff; box-shadow:0 2px 8px #1A3A6B22; font:700 9px 'Plus Jakarta Sans',sans-serif; white-space:nowrap; }
 @keyframes mapPulse { 0%{opacity:.65;transform:translate(-50%,-50%) scale(.8)} 100%{opacity:0;transform:translate(-50%,-50%) scale(1.8)} }
 .map-svg-bg { width:100%; height:100%; }
@@ -505,6 +506,7 @@ body.dark-mode .stat-p,
 body.dark-mode .map-panel { background:#1F2937; }
 body.dark-mode .google-map { filter:invert(0.9) hue-rotate(180deg) saturate(0.75) brightness(0.8); }
 body.dark-mode .destination-label { background:#1F2937; color:#F8FAFC; }
+body.dark-mode .origin-label { background:#1F2937; color:#F8FAFC; }
 body.dark-mode .header,
 body.dark-mode .tabs,
 body.dark-mode .bnav,
@@ -965,6 +967,7 @@ body.dark-mode .route-select { background:#1F2937; border-color:#475569; color:#
                 <div class="bus-pulse-map"></div>
                 <div class="bus-badge"><span>🚌</span><span id="busSimulationStatus">Bus 42A · arriving</span></div>
               </div>
+              <div class="origin-marker">●<span class="origin-label" id="originLabel">Starting point</span></div>
               <div class="destination-marker">📍<span class="destination-label" id="destinationLabel">Destination</span></div>
             </div>
           </div>
@@ -1218,7 +1221,7 @@ function restoreSession(){
       const map=document.querySelector('.google-map');
       if(map) map.src=`https://www.google.com/maps?q=${encodeURIComponent(saved.search)}&output=embed`;
       document.getElementById('destinationLabel').textContent=saved.to || saved.search;
-      simulateBusArrival(saved.to || saved.search);
+      simulateBusArrival(saved.to || saved.search, saved.from || 'Starting point');
     }
     const section=saved.activeSection;
     if(section && document.getElementById('bn-'+section)) switchBn(section,document.getElementById('bn-'+section));
@@ -1241,7 +1244,7 @@ function searchPlace(){
   const map=document.querySelector('.google-map');
   if(map) map.src=`https://www.google.com/maps?q=${encodeURIComponent(place)}&output=embed`;
   document.getElementById('destinationLabel').textContent=place;
-  simulateBusArrival(place);
+  simulateBusArrival(place, 'Current location');
   saveSession();
   switchBn('mapview',document.getElementById('bn-mapview'));
 }
@@ -1269,25 +1272,35 @@ function planRoute(){
   query.value=`${from} to ${to}`;
   document.getElementById('routePicker').classList.remove('open');
   if(map) map.src=`https://www.google.com/maps?q=${encodeURIComponent(from+' to '+to)}&output=embed`;
-  simulateBusArrival(to);
+  simulateBusArrival(to, from);
   saveSession();
   switchBn('mapview',document.getElementById('bn-mapview'));
 }
 
-function simulateBusArrival(destination){
+function simulateBusArrival(destination, origin='Starting point'){
   const simulation=document.getElementById('busSimulation');
   const marker=document.getElementById('busMarkerSimulation');
   const status=document.getElementById('busSimulationStatus');
+  const originLabel=document.getElementById('originLabel');
   const label=document.getElementById('destinationLabel');
   simulation.classList.add('active');
-  marker.classList.remove('moving');
+  cancelAnimationFrame(window.busAnimationFrame);
+  marker.style.left='10%';
   status.textContent='Bus 42A · arriving';
+  originLabel.textContent=origin;
   label.textContent=destination;
-  requestAnimationFrame(() => marker.classList.add('moving'));
   clearTimeout(window.busArrivalTimer);
-  window.busArrivalTimer=setTimeout(() => {
-    status.textContent='Bus 42A · arrived';
-  },10000);
+  const startedAt=performance.now();
+  const duration=10000;
+  function moveBus(now){
+    const progress=Math.min(1,(now-startedAt)/duration);
+    marker.style.left=`${10+(68*progress)}%`;
+    if(progress < 1){
+      window.busAnimationFrame=requestAnimationFrame(moveBus);
+    }
+  }
+  window.busAnimationFrame=requestAnimationFrame(moveBus);
+  window.busArrivalTimer=setTimeout(()=>{status.textContent='Bus 42A · arrived';},duration);
 }
 
 // Day chip
