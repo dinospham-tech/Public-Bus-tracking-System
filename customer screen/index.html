@@ -104,11 +104,20 @@ body {
 }
 .search-icon { flex-shrink:0; }
 .search-text { flex:1; font-size:14px; color:#94A3B8; font-weight:500; }
+.search-text { border:0; outline:0; background:transparent; min-width:0; font-family:'Plus Jakarta Sans',sans-serif; cursor:pointer; }
 .search-filter {
   background:#1A3A6B; color:#fff; border:none; border-radius:8px;
   padding:4px 10px; font-size:11px; font-weight:700; cursor:pointer;
   font-family:'Plus Jakarta Sans',sans-serif;
 }
+.route-picker {
+  display:none; gap:8px; align-items:center; margin-top:8px; padding:10px;
+  background:#F0F4FF; border:1.5px solid #E2E8F4; border-radius:14px;
+}
+.route-picker.open { display:flex; }
+.route-select { flex:1; min-width:0; border:1px solid #D7E1F0; border-radius:9px; padding:8px 6px; background:#fff; color:#1E293B; font:600 11px 'Plus Jakarta Sans',sans-serif; }
+.route-arrow { color:#94A3B8; font-weight:800; }
+.route-submit { border:0; border-radius:9px; padding:8px 10px; background:#1A3A6B; color:#fff; font:700 11px 'Plus Jakarta Sans',sans-serif; cursor:pointer; white-space:nowrap; }
 
 /* ── Tabs ── */
 .tabs {
@@ -124,13 +133,15 @@ body {
 .tab.active { color:#1A3A6B; border-bottom-color:#1A3A6B; }
 
 /* ── Main scroll ── */
-.main { flex:1; overflow-y:auto; overflow-x:hidden; }
+.main { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; }
 .main::-webkit-scrollbar { width:3px; }
 .main::-webkit-scrollbar-thumb { background:#E2E8F4; border-radius:2px; }
 
 /* ── Sections ── */
 .sec { display:none; }
 .sec.active { display:block; }
+#sec-mapview { height:100%; }
+#sec-mapview > div { position:relative; }
 
 /* ============ HOME SECTION ============ */
 
@@ -358,6 +369,8 @@ body {
   flex:1; position:relative; overflow:hidden;
   background:#E8F0F8;
 }
+.map-fake > svg { display:none; }
+.google-map { width:100%; height:100%; min-height:300px; border:0; display:block; transition:filter 0.2s ease; }
 .map-svg-bg { width:100%; height:100%; }
 .map-panel {
   position:absolute; bottom:0; left:0; right:0;
@@ -455,6 +468,76 @@ body {
 .fa-icon { font-size:18px; }
 .fa-text { flex:1; font-size:12px; font-weight:600; }
 .fa-close { font-size:16px; color:#7AA4DC; cursor:pointer; background:none; border:none; color:inherit; opacity:0.6; }
+
+body.dark-mode { background-color:#111827; background-image:radial-gradient(ellipse 80% 60% at 20% 20%, #1E3A5F80 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 80%, #17255499 0%, transparent 60%); }
+body.dark-mode .phone,
+body.dark-mode .screen { background:#111827; }
+body.dark-mode .phone { box-shadow:0 0 0 10px #1F2937, 0 0 0 12px #0F172A, 0 60px 140px #00000088; }
+body.dark-mode .pb { background:#374151; }
+body.dark-mode .sbar-time,
+body.dark-mode .sh-title,
+body.dark-mode .brand-name,
+body.dark-mode .bc-name,
+body.dark-mode .fav-stop,
+body.dark-mode .srh-name,
+body.dark-mode .tl-stop,
+body.dark-mode .pref-label { color:#F8FAFC; }
+body.dark-mode .header,
+body.dark-mode .tabs,
+body.dark-mode .bnav,
+body.dark-mode .search-bar,
+body.dark-mode .day-chip,
+body.dark-mode .schedule-route-head,
+body.dark-mode .tl-card,
+body.dark-mode .bus-card,
+body.dark-mode .fav-chip,
+body.dark-mode .pref-card,
+body.dark-mode .stat-p,
+body.dark-mode .map-panel { background:#1F2937; }
+body.dark-mode .google-map { filter:invert(0.9) hue-rotate(180deg) saturate(0.75) brightness(0.8); }
+body.dark-mode .header,
+body.dark-mode .tabs,
+body.dark-mode .bnav,
+body.dark-mode .search-bar,
+body.dark-mode .day-chip,
+body.dark-mode .schedule-route-head,
+body.dark-mode .tl-card,
+body.dark-mode .bus-card,
+body.dark-mode .fav-chip,
+body.dark-mode .pref-card,
+body.dark-mode .stat-p { border-color:#374151; }
+body.dark-mode .search-bar,
+body.dark-mode .day-chip,
+body.dark-mode .fav-chip,
+body.dark-mode .bc-track-btn,
+body.dark-mode .notif-btn { background:#273449; }
+body.dark-mode .search-text,
+body.dark-mode .bc-toward,
+body.dark-mode .bc-eta-unit,
+body.dark-mode .fav-sub,
+body.dark-mode .srh-stops,
+body.dark-mode .srh-freq-label,
+body.dark-mode .tl-sub,
+body.dark-mode .pref-val,
+body.dark-mode .stat-p-label { color:#94A3B8; }
+body.dark-mode .day-chip { color:#CBD5E1; }
+body.dark-mode .tab,
+body.dark-mode .bn-lbl { color:#94A3B8; }
+body.dark-mode .tab.active,
+body.dark-mode .bn.active .bn-lbl,
+body.dark-mode .bc-track-btn { color:#93C5FD; }
+body.dark-mode .tl-card.now-card { background:#243B5A; }
+body.dark-mode .tl-circ,
+body.dark-mode .tl-line { border-color:#475569; background-color:#273449; }
+body.dark-mode .tl-circ.now { background:#1A3A6B; border-color:#1A3A6B; }
+body.dark-mode .tl-card.past-card { opacity:0.55; }
+body.dark-mode .map-fake,
+body.dark-mode #sec-mapview > div > div:nth-child(2) { background:#172033 !important; }
+body.dark-mode .map-search { background:#1F2937; border-color:#374151; }
+body.dark-mode .profile-card { box-shadow:0 8px 20px #00000033; }
+body.dark-mode .float-alert { background:#243B5A; }
+body.dark-mode .route-picker { background:#273449; border-color:#475569; }
+body.dark-mode .route-select { background:#1F2937; border-color:#475569; color:#F8FAFC; }
 </style>
 </head>
 <body>
@@ -500,8 +583,23 @@ body {
       </div>
       <div class="search-bar">
         <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#94A3B8" stroke-width="1.5"></circle><path d="M11 11l3 3" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"></path></svg>
-        <div class="search-text">Search stop, route or area…</div>
-        <button class="search-filter">Filter</button>
+        <input class="search-text" id="searchQuery" value="Search stop, route or area..." readonly onclick="showRoutePicker()">
+        <button class="search-filter" onclick="showRoutePicker()">Plan route</button>
+      </div>
+      <div class="route-picker" id="routePicker">
+        <input class="route-select" id="routeFrom" list="locationSuggestions" value="Central Station" placeholder="Starting point" aria-label="Starting point">
+        <span class="route-arrow">to</span>
+        <input class="route-select" id="routeTo" list="locationSuggestions" value="Airport Terminal" placeholder="Destination" aria-label="Destination">
+        <datalist id="locationSuggestions">
+          <option value="Central Station"></option>
+          <option value="Market Street"></option>
+          <option value="Old Town Square"></option>
+          <option value="University Avenue"></option>
+          <option value="Tech Park"></option>
+          <option value="City Mall"></option>
+          <option value="Airport Terminal"></option>
+        </datalist>
+        <button class="route-submit" onclick="planRoute()">Show</button>
       </div>
     </div>
 
@@ -775,8 +873,7 @@ body {
             </div>
           </div>
           <div style="flex:1;position:relative;overflow:hidden;background:#D6E4F0;min-height:300px;">
-            <!-- Fake map SVG -->
-            <svg width="100%" height="100%" viewBox="0 0 390 340" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;">
+            <svg hidden aria-hidden="true" width="100%" height="100%" viewBox="0 0 390 340" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;">
               <rect width="390" height="340" fill="#D6E4F0"></rect>
               <!-- Water -->
               <path d="M0 260 Q80 250 160 265 Q240 280 320 260 Q360 250 390 255 L390 340 L0 340Z" fill="#B8D4EA" opacity="0.8"></path>
@@ -852,12 +949,7 @@ body {
               <circle cx="20" cy="35" r="4" fill="none" stroke="#EA580C" stroke-width="2"></circle><text x="27" y="39" font-size="7" fill="#EA580C" font-family="monospace">Route 7B</text>
               <circle cx="20" cy="48" r="4" fill="none" stroke="#7C3AED" stroke-width="2"></circle><text x="27" y="52" font-size="7" fill="#7C3AED" font-family="monospace">Route 15C</text>
             </svg>
-            <!-- Map controls -->
-            <div style="position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px;">
-              <div style="width:32px;height:32px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px #1A3A6B14;cursor:pointer;">+</div>
-              <div style="width:32px;height:32px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px #1A3A6B14;cursor:pointer;">−</div>
-              <div style="width:32px;height:32px;background:#1A3A6B;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px #1A3A6B33;cursor:pointer;">◎</div>
-            </div>
+            <iframe class="google-map" title="Google Map showing buses near University Avenue" src="https://www.google.com/maps?q=University+Avenue&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
           </div>
           <!-- Slide-up panel -->
           <div class="map-panel">
@@ -931,7 +1023,7 @@ body {
             <div class="pref-item">
               <div class="pref-icon">🌙</div>
               <div class="pref-label">Dark mode</div>
-              <div class="toggle off" onclick="toggleSwitch(this)"></div>
+              <div class="toggle off" onclick="toggleDarkMode(this)"></div>
             </div>
             <div class="pref-item">
               <div class="pref-icon">♿</div>
@@ -1006,6 +1098,8 @@ body {
 </style>
 
 <script>
+document.querySelectorAll('#sec-mapview svg:not(.search-icon)').forEach(map => map.remove());
+
 // Clock
 function tick(){
   const now=new Date(),p=n=>String(n).padStart(2,'0');
@@ -1066,6 +1160,35 @@ setInterval(()=>{
 
 // Toggle switch
 function toggleSwitch(el){el.classList.toggle('off');}
+
+function toggleDarkMode(el){
+  el.classList.toggle('off');
+  document.body.classList.toggle('dark-mode', !el.classList.contains('off'));
+}
+
+function showRoutePicker(){
+  document.getElementById('routePicker').classList.add('open');
+  document.getElementById('searchQuery').select();
+}
+
+function planRoute(){
+  const from=document.getElementById('routeFrom').value;
+  const to=document.getElementById('routeTo').value;
+  const query=document.getElementById('searchQuery');
+  const map=document.querySelector('.google-map');
+  if(!from.trim() || !to.trim()){
+    query.value='Enter both locations';
+    return;
+  }
+  if(from.trim().toLowerCase() === to.trim().toLowerCase()){
+    query.value='Choose two different locations';
+    return;
+  }
+  query.value=`${from} to ${to}`;
+  document.getElementById('routePicker').classList.remove('open');
+  if(map) map.src=`https://www.google.com/maps?q=${encodeURIComponent(from+' to '+to)}&output=embed`;
+  switchBn('mapview',document.getElementById('bn-mapview'));
+}
 
 // Day chip
 function selectDay(el){
