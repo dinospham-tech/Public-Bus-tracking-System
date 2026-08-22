@@ -1,5 +1,5 @@
 const { distanceKm, etaMinutes } = require('./geo');
-const { getRoute } = require('../data/routes');
+const { getRoute } = require('./route');
 
 // bus_id -> live state. Swap for Redis/DB if you need multi-process/persistence.
 const buses = new Map();

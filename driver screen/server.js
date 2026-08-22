@@ -4,8 +4,8 @@ const cors = require('cors');
 const http = require('http');
 const { WebSocketServer } = require('ws');
 
-const { getAllRoutes, getRoute } = require('./data/routes');
-const { applyTelemetry, defaultLiveStatus, setSos } = require('./lib/store');
+const { getAllRoutes, getRoute } = require('./route');
+const { applyTelemetry, defaultLiveStatus, setSos } = require('./store');
 
 const PORT = process.env.PORT || 8000;
 const DEVICE_API_KEY = process.env.DEVICE_API_KEY || 'your-secret-device-key-here';
