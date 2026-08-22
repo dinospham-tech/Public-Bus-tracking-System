@@ -942,4 +942,21 @@
             if (state.tripPaused) {
                 document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-play mr-1"></i> Resume';
                 document.getElementById('pauseBtn').classList.remove('bg-yellow-500');
-                document.getElementById('pauseBtn').classList.add('bg-blue-
+                document.getElementById('pauseBtn').classList.add('bg-blue-500');
+                clearInterval(state.tripTimerInterval);
+                clearInterval(state.speedInterval);
+                state.speed = 0;
+                updateSpeedDisplay();
+                addNotification('Trip paused', 'Just now', 'warning');
+            } else {
+                document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause mr-1"></i> Pause';
+                document.getElementById('pauseBtn').classList.remove('bg-blue-500');
+                document.getElementById('pauseBtn').classList.add('bg-yellow-500');
+                state.tripTimerInterval = setInterval(updateTripTimer, 1000);
+                state.speedInterval = setInterval(updateSpeed, 2000);
+                addNotification('Trip resumed', 'Just now', 'success');
+            }
+        }
+    </script>
+</body>
+</html>
