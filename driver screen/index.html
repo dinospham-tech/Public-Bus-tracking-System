@@ -1,0 +1,567 @@
+<html lang="en"><head><script type="text/javascript" src="/___vscode_livepreview_injected_script"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DriveOps — Driver App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0e0e1a;--phone:#19192d;--panel:#121226;--line:#2b2b45;--muted:#777795;--text:#f5f5f7;--orange:#ff6b2b;--green:#00e5a0;--red:#ff3b5c;--yellow:#ffb547}
+body{min-height:100vh;background:radial-gradient(circle at 25% 65%,#ff6b2b12,transparent 45%),radial-gradient(circle at 75% 25%,#00e5a008,transparent 45%),var(--bg);display:flex;align-items:center;justify-content:center;font-family:"Space Grotesk",sans-serif;color:var(--text)}
+.phone{width:390px;height:844px;background:var(--phone);border-radius:52px;box-shadow:0 0 0 10px #222238,0 0 0 12px #2c2c44,0 70px 140px #000b;position:relative;overflow:hidden}
+.dynamic-island{position:absolute;z-index:20;top:10px;left:50%;transform:translateX(-50%);width:120px;height:34px;border-radius:20px;background:#0e0e1a;display:flex;align-items:center;justify-content:space-between;padding:0 12px}
+.island-cam{width:10px;height:10px;border-radius:50%;background:#19192d;border:1px solid #33334c}.island-mic{width:6px;height:6px;border-radius:50%;background:#19192d}
+.screen{height:100%;display:flex;flex-direction:column;border-radius:44px;overflow:hidden;background:var(--phone)}
+.status{height:54px;display:flex;align-items:center;justify-content:space-between;padding:15px 24px 0;flex-shrink:0}
+.time{font:700 14px "JetBrains Mono"}.icons{display:flex;gap:7px;align-items:center}.bars{display:flex;gap:2px;align-items:flex-end}.bars i{width:3px;background:#fff;border-radius:2px}.bars i:nth-child(1){height:4px}.bars i:nth-child(2){height:7px}.bars i:nth-child(3){height:10px}.bars i:nth-child(4){height:13px}
+.battery{width:22px;height:11px;border:1.5px solid #fff;border-radius:3px;padding:1.5px}.battery:after{content:"";position:absolute;margin-left:20px;margin-top:1px;width:3px;height:5px;background:#fff;border-radius:0 1px 1px 0}.battery span{display:block;width:82%;height:100%;background:var(--green);border-radius:2px}
+.header{background:var(--panel);padding:12px 18px 15px;border-bottom:1px solid var(--line);flex-shrink:0}
+.driver{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.driver-info{display:flex;align-items:center;gap:10px}.avatar{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--orange),var(--red));display:grid;place-items:center;font-weight:800}.name{font-size:15px;font-weight:800}.id{font:11px "JetBrains Mono";color:#666686;margin-top:2px}.shift{display:flex;align-items:center;gap:6px;border:1px solid #00e5a044;background:#00e5a018;color:var(--green);border-radius:20px;padding:6px 10px;font-size:11px;font-weight:800}.dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:blink 1.5s infinite}
+.route-title{display:flex;justify-content:space-between;margin-bottom:9px;font-size:10px;font-weight:800;letter-spacing:.8px;color:#777795}.route-title strong{color:var(--orange);font:600 10px "JetBrains Mono"}
+.track{display:flex;align-items:center}.node{flex:1;text-align:center;position:relative}.circle{margin:auto;width:13px;height:13px;border-radius:50%;border:2px solid #3b3b59;background:var(--phone);position:relative;z-index:2}.circle.done{background:var(--orange);border-color:var(--orange)}.circle.current{width:17px;height:17px;background:var(--orange);border-color:#fff;box-shadow:0 0 0 3px #ff6b2b44}.connector{height:3px;flex:1;background:#30304b}.connector.done{background:var(--orange)}.node-label{font-size:8px;color:#646484;margin-top:5px;font-weight:700}.node-label.done{color:#ff6b2b99}.node-label.current{color:#fff}.tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0}.tab{flex:1;border:0;background:none;padding:9px 0 8px;color:#555575;font:700 9px "Space Grotesk";cursor:pointer}.tab .ico{display:block;font-size:18px;margin-bottom:3px}.tab.active{color:var(--orange)}.tab:after{content:"";display:block;width:4px;height:4px;border-radius:50%;background:var(--orange);margin:4px auto 0;opacity:0}.tab.active:after{opacity:1}
+.main{flex:1;overflow:auto}.main::-webkit-scrollbar{width:3px}.main::-webkit-scrollbar-thumb{background:#33334c}.section{display:none}.section.active{display:block;animation:fade .18s ease}
+.alert{margin:10px 16px 8px;padding:11px 12px;border:1px solid #ff3b5c44;background:#ff3b5c18;border-radius:14px;display:flex;gap:9px;align-items:center}.alert span:nth-child(2){font-size:11px;font-weight:700;color:var(--red);flex:1}.close{cursor:pointer;color:#ff3b5c88}
+.next{margin:6px 16px 14px;padding:17px;border:1px solid #ff6b2b44;border-radius:18px;background:linear-gradient(135deg,#ff6b2b14,#ff3b5c08)}.eyebrow{font-size:10px;font-weight:800;letter-spacing:1px;color:var(--orange);margin-bottom:8px}.next-main{display:flex;justify-content:space-between}.stop-name{font-size:23px;line-height:1.08;font-weight:800}.sub{font-size:11px;color:var(--muted);margin-top:5px}.eta{text-align:right}.eta b{font:700 35px "JetBrains Mono";color:var(--orange)}.eta small{display:block;font-size:9px;color:var(--muted)}.divider{height:1px;background:#ff6b2b22;margin:14px 0}.info-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.info{background:var(--phone);border-radius:12px;padding:11px;text-align:center}.info b{display:block;font:700 14px "JetBrains Mono";color:#fff}.info span{font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:700}
+.actions{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:9px;padding:0 16px 14px}.action{border:0;border-radius:15px;padding:13px 7px;cursor:pointer;font:700 12px "Space Grotesk";color:#fff}.action i{display:block;font-style:normal;font-size:21px;margin-bottom:4px}.primary{background:var(--orange)}.secondary{background:#303049;color:#d0d0df}.danger{background:#ff3b5c18;color:var(--red);border:1px solid #ff3b5c33}
+.card{margin:0 16px 12px;padding:15px;border:1px solid var(--line);background:var(--panel);border-radius:18px}.title{font-size:10px;color:var(--muted);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:8px}.quick-btn{border:1px solid var(--line);background:var(--phone);border-radius:13px;padding:12px;color:#c8c8d8;font:600 11px "Space Grotesk";cursor:pointer}.quick-btn span{font-size:18px;display:block;margin-bottom:4px}
+.stops{padding:14px 16px}.stop-row{display:flex;gap:11px;position:relative}.stop-row:before{content:"";position:absolute;left:18px;top:27px;bottom:-8px;width:2px;background:#30304b}.stop-row:last-child:before{display:none}.stop-dot{z-index:1;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:2px solid #3b3b59;background:var(--phone);color:#777795;font-size:9px;font-weight:800;flex-shrink:0;margin-top:8px}.stop-dot.done,.stop-dot.current{background:var(--orange);border-color:var(--orange);color:#fff}.stop-dot.current{border-color:#fff;box-shadow:0 0 0 3px #ff6b2b33}.stop-card{flex:1;border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:12px 13px;margin-bottom:9px}.stop-card.current{border-color:#ff6b2b44;background:#ff6b2b14}.stop-card.done{opacity:.5}.stop-top{display:flex;justify-content:space-between}.stop-card h3{font-size:14px}.stop-card p{font:10px "JetBrains Mono";color:var(--muted);margin-top:3px}.stop-time{font:700 13px "JetBrains Mono";color:var(--orange)}.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.tag{padding:4px 7px;border-radius:7px;background:#2d2d48;color:#9999b5;font-size:9px;font-weight:700}.tag.ok{background:#00e5a018;color:var(--green)}.tag.warn{background:#ffb54718;color:var(--yellow)}
+.report,.profile{padding:14px 16px}.input-label{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-bottom:6px}.input{width:100%;padding:12px;border:1px solid var(--line);background:var(--phone);border-radius:12px;color:#eee;font-size:12px;margin-bottom:11px}.types{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}.type{border:1px solid var(--line);background:var(--phone);border-radius:12px;padding:10px;text-align:center;cursor:pointer;color:var(--muted);font-size:10px;font-weight:700}.type b{display:block;font-size:18px;margin-bottom:4px}.type.selected{border-color:var(--orange);background:#ff6b2b14;color:var(--orange)}.send{width:100%;border:0;border-radius:14px;padding:14px;background:var(--orange);color:#fff;font:700 14px "Space Grotesk";cursor:pointer}
+.profile-hero{text-align:center;padding:19px;border:1px solid #ff6b2b33;background:#ff6b2b16;border-radius:20px}.big-avatar{width:70px;height:70px;margin:0 auto 11px;border-radius:22px;display:grid;place-items:center;background:linear-gradient(135deg,var(--orange),var(--red));font-size:27px;font-weight:800}.profile-hero h2{font-size:20px}.profile-hero p{font:11px "JetBrains Mono";color:var(--muted);margin-top:4px}.chips{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:11px}.chip{padding:5px 9px;border-radius:20px;background:#2d2d48;color:#9999b5;font-size:9px;font-weight:700}.chip.green{background:#00e5a018;color:var(--green)}.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:11px 0}.stat{padding:13px;border:1px solid var(--line);background:var(--panel);border-radius:15px}.stat b{font:700 22px "JetBrains Mono"}.stat span{display:block;color:var(--muted);font-size:9px;font-weight:700;margin-top:4px;text-transform:uppercase}.menu{border:1px solid var(--line);background:var(--panel);border-radius:17px;overflow:hidden;margin-bottom:12px}.menu-item{display:flex;align-items:center;gap:11px;padding:14px 15px;border-bottom:1px solid var(--line);cursor:pointer}.menu-item:last-child{border:0}.menu-item .mi{font-size:19px;width:27px;text-align:center}.menu-item label{flex:1;color:#ccc; font-size:13px;font-weight:600}.menu-item em{font-style:normal;color:#555575}
+.bottom{display:flex;background:var(--panel);border-top:1px solid var(--line);padding:9px 0 27px;flex-shrink:0}.bn{flex:1;border:0;background:none;color:#555575;font:700 9px "Space Grotesk";cursor:pointer}.bn span{display:block;font-size:21px;margin-bottom:3px}.bn.active{color:var(--orange)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;background:#26263c;border:1px solid #41415c;color:#fff;padding:10px 15px;border-radius:12px;font-size:12px;font-weight:700;pointer-events:none;transition:.25s;z-index:100}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@keyframes blink{50%{opacity:.3}}@keyframes fade{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media(max-height:900px){.phone{transform:scale(.88)}}
+@media(max-width:430px){body{align-items:flex-start}.phone{width:100vw;height:100vh;border-radius:0;box-shadow:none}.screen{border-radius:0}.dynamic-island{top:7px}}
+</style>
+</head>
+<body>
+<div class="phone">
+<div class="dynamic-island"><div class="island-cam"></div><div class="island-mic"></div></div>
+<div class="screen">
+<div class="status"><div class="time" id="clock">22:23</div><div class="icons"><div class="bars"><i></i><i></i><i></i><i></i></div><span>⌁</span><div class="battery"><span></span></div></div></div>
+
+<div class="header">
+<div class="driver"><div class="driver-info"><div class="avatar">AS</div><div><div class="name" id="driverName">Arjun Sharma</div><div class="id" id="driverId">ID: DRV-2847 · Bus WB-04A-2147</div></div></div><div class="shift" id="dutyStatus"><i class="dot"></i> DUTY ACTIVE</div></div>
+<div class="route-title"><span id="routeInfo">ROUTE 42A · KOLKATA CITY</span><strong id="stopProgress">3/7 STOPS</strong></div>
+<div class="track" id="routeTrack">
+<!-- Dynamic route track will be rendered here -->
+</div>
+</div>
+
+
+
+<div class="main">
+<section class="section active" id="trip">
+<div class="alert" id="alert"><span>⚠️</span><span id="alertMessage">Traffic delay near Sector V — expect +4 min</span><b class="close" onclick="dismissAlert()">✕</b></div>
+<div class="next"><div class="eyebrow">▶ NEXT STOP</div><div class="next-main"><div><div class="stop-name" id="nextStopName">College More</div><div class="sub" id="nextStopSub">Stop #04 · Kolkata</div></div><div class="eta"><b id="eta">3</b><small>MIN ETA</small></div></div><div class="divider"></div><div class="info-row"><div class="info"><b id="currentSpeed">38 km/h</b><span>Current Speed</span></div><div class="info"><b id="scheduleStatus" style="color:var(--green)">On Time</b><span>Schedule</span></div></div></div>
+<div class="actions"><button class="action primary" onclick="sendTelemetry('reached')"><i>📍</i>Reached Stop</button><button class="action secondary" onclick="sendTelemetry('skipped')"><i>⏭</i>Skip Stop</button><button class="action danger" onclick="sendEmergency()"><i>🆘</i>Emergency</button></div>
+<div class="card"><div class="title">Quick Actions</div><div class="quick"><button class="quick-btn" onclick="callControlRoom()"><span>📞</span>Call Control Room</button><button class="quick-btn" onclick="openNavigation()"><span>🗺️</span>Open Navigation</button><button class="quick-btn" onclick="requestBreak()"><span>☕</span>Request Break</button><button class="quick-btn" onclick="switchTab('report')"><span>⚠️</span>Report Issue</button></div></div>
+</section>
+
+<section class="section" id="stops"><div class="stops">
+<div class="title" style="margin-bottom:13px">TODAY'S SCHEDULE · <span id="stopsRouteName">ROUTE 42A</span></div>
+<div id="stopsList">
+<!-- Dynamic stops list will be rendered here -->
+</div>
+</div></section>
+
+<section class="section" id="report"><div class="report"><div class="card" style="margin:0 0 12px"><div class="title">REPORT AN ISSUE</div><label class="input-label">Issue Type</label><div class="types"><div class="type selected" onclick="selectType(this)"><b>🚧</b>Road Block</div><div class="type" onclick="selectType(this)"><b>🚌</b>Vehicle Issue</div><div class="type" onclick="selectType(this)"><b>⚠️</b>Safety Issue</div><div class="type" onclick="selectType(this)"><b>🕐</b>Delay</div></div><label class="input-label">Current Location</label><div class="input" id="reportLocation">College More — Stop #04</div><label class="input-label">Notes</label><div class="input" id="reportNotes" contenteditable="true" style="height:72px;color:#555575">Describe the issue…</div><div style="font:10px 'JetBrains Mono';color:#777795;margin-bottom:12px">● GPS location attached automatically</div><button class="send" onclick="sendReport()">Send to Control Room</button></div><div class="card" style="margin:0"><div class="title">RECENT REPORTS</div><div id="recentReports">
+<div style="padding:11px 0;border-bottom:1px solid var(--line);font-size:12px"><b>Traffic Delay</b><div style="color:var(--muted);font-size:10px;margin-top:3px">Park Street · Acknowledged · 08:18</div></div>
+<div style="padding:11px 0;border-bottom:1px solid var(--line);font-size:12px"><b>Safety Check</b><div style="color:var(--muted);font-size:10px;margin-top:3px">Esplanade · Resolved · 07:54</div></div>
+<div style="padding:11px 0;font-size:12px"><b>Trip Started</b><div style="color:var(--muted);font-size:10px;margin-top:3px">All systems OK · 07:45</div></div>
+</div></div></div></section>
+
+<section class="section" id="profile"><div class="profile"><div class="profile-hero"><div class="big-avatar">AS</div><h2 id="profileName">Arjun Sharma</h2><p id="profileId">Driver ID: DRV-2847 · Bus WB-04A-2147</p><div class="chips"><span class="chip green">● Duty Active</span><span class="chip" id="profileRoute">Route 42A</span><span class="chip">Morning</span><span class="chip">4.9 ★</span></div></div><div class="stats"><div class="stat"><b id="tripsCount">127</b><span>Trips This Month</span></div><div class="stat"><b style="color:var(--green)" id="onTimeRate">98.2%</b><span>On-Time Rate</span></div><div class="stat"><b id="kmCount">3,840</b><span>Km This Month</span></div><div class="stat"><b style="color:var(--orange)" id="hoursToday">6:20</b><span>Hours Today</span></div></div><div class="menu"><div class="menu-item" onclick="toast('Schedule opened')"><span class="mi">📅</span><label>My Schedule</label><em>›</em></div><div class="menu-item" onclick="toast('Route history opened')"><span class="mi">🗺️</span><label>Route History</label><em>›</em></div><div class="menu-item" onclick="toast('Performance report opened')"><span class="mi">📊</span><label>Performance Report</label><em>›</em></div><div class="menu-item" onclick="toast('Notifications opened')"><span class="mi">🔔</span><label>Notifications</label><em>›</em></div><div class="menu-item" onclick="toast('Settings opened')"><span class="mi">⚙️</span><label>Settings</label><em>›</em></div></div><div class="menu"><div class="menu-item" onclick="endDuty()"><span class="mi">🔴</span><label style="color:var(--red)">End Duty</label><em>›</em></div></div></div></section>
+</div>
+
+<div class="bottom">
+<button class="bn active" id="bn-trip" onclick="switchTab('trip')"><span>🚌</span>TRIP</button><button class="bn" id="bn-stops" onclick="switchTab('stops')"><span>📍</span>STOPS</button><button class="bn" id="bn-report" onclick="switchTab('report')"><span>📋</span>REPORT</button><button class="bn" id="bn-profile" onclick="switchTab('profile')"><span>👤</span>ME</button>
+</div>
+</div></div><div class="toast show" id="toast">Connection error: Failed to fetch</div>
+
+<script>
+// ============================================
+// CONFIGURATION
+// ============================================
+const CONFIG = {
+    API_URL: 'http://localhost:8000', // Change to your backend URL
+    DEVICE_KEY: 'your-secret-device-key-here', // Must match backend DEVICE_API_KEY
+    BUS_ID: 'bus-001',
+    ROUTE_ID: 'demo',
+    UPDATE_INTERVAL: 5000, // 5 seconds
+};
+
+// ============================================
+// STATE MANAGEMENT
+// ============================================
+let state = {
+    busId: CONFIG.BUS_ID,
+    routeId: CONFIG.ROUTE_ID,
+    currentLat: 12.9716,
+    currentLng: 77.5946,
+    currentSpeed: 0,
+    nextStop: null,
+    allStops: [],
+    routeStations: [],
+    sosActive: false,
+    dutyActive: true,
+    wsConnection: null,
+};
+
+// ============================================
+// API HELPERS
+// ============================================
+async function apiRequest(endpoint, options = {}) {
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+        'X-Device-Key': CONFIG.DEVICE_KEY,
+    };
+    
+    try {
+        const response = await fetch(`${CONFIG.API_URL}${endpoint}`, {
+            ...options,
+            headers: { ...defaultHeaders, ...options.headers },
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `HTTP ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('API Error:', error);
+        toast('Connection error: ' + error.message);
+        return null;
+    }
+}
+
+// ============================================
+// TELEMETRY SIMULATION (GPS + Speed)
+// ============================================
+function simulateGPS() {
+    // Simulate moving along the route with some randomness
+    const latVariation = (Math.random() - 0.5) * 0.001;
+    const lngVariation = (Math.random() - 0.5) * 0.001;
+    
+    state.currentLat += latVariation * 0.5;
+    state.currentLng += lngVariation * 0.5;
+    state.currentSpeed = 20 + Math.random() * 30; // 20-50 km/h
+    
+    // If we have a next stop, slowly move towards it
+    if (state.nextStop && state.nextStop.distance_km > 0.1) {
+        // Simulate progress
+        const progress = (state.currentSpeed / 60) * 0.1; // km per 10 seconds
+        // In real app, this would be actual GPS data
+    }
+    
+    return {
+        bus_id: state.busId,
+        route_id: state.routeId,
+        lat: state.currentLat,
+        lng: state.currentLng,
+        speed_kmh: Math.round(state.currentSpeed),
+        timestamp: Math.floor(Date.now() / 1000),
+    };
+}
+
+// ============================================
+// SEND TELEMETRY TO BACKEND
+// ============================================
+async function sendTelemetry(action = 'update') {
+    const telemetryData = simulateGPS();
+    
+    if (action === 'reached') {
+        toast('📍 Marking stop as reached...');
+        // In real implementation, this would update the route progress
+    } else if (action === 'skipped') {
+        toast('⏭️ Skipping stop...');
+    }
+    
+    const result = await apiRequest('/telemetry', {
+        method: 'POST',
+        body: JSON.stringify(telemetryData),
+    });
+    
+    if (result) {
+        console.log('Telemetry accepted:', result);
+        updateUI(result);
+        return result;
+    }
+    return null;
+}
+
+// ============================================
+// FETCH LIVE STATUS
+// ============================================
+async function fetchLiveStatus() {
+    const result = await apiRequest(`/live/${state.busId}`);
+    if (result) {
+        updateUI(result);
+        return result;
+    }
+    return null;
+}
+
+// ============================================
+// FETCH ALL ROUTES
+// ============================================
+async function fetchRoutes() {
+    const result = await apiRequest('/routes');
+    if (result && result.length > 0) {
+        const route = result[0]; // Use first route for demo
+        state.routeStations = route.stations;
+        updateRouteTrack(route);
+        return route;
+    }
+    return null;
+}
+
+// ============================================
+// UI UPDATE FUNCTIONS
+// ============================================
+function updateUI(data) {
+    if (!data) return;
+    
+    // Update next stop
+    if (data.next_stop) {
+        state.nextStop = data.next_stop;
+        document.getElementById('nextStopName').textContent = data.next_stop.station_name;
+        document.getElementById('eta').textContent = data.next_stop.eta_minutes;
+        document.getElementById('nextStopSub').textContent = 
+            `Stop #${getStopSequence(data.next_stop.station_id)} · ${data.route_name}`;
+    }
+    
+    // Update speed
+    document.getElementById('currentSpeed').textContent = `${data.current_speed_kmh} km/h`;
+    
+    // Update schedule status
+    const statusEl = document.getElementById('scheduleStatus');
+    if (data.delay_status === 'On Time') {
+        statusEl.textContent = 'On Time';
+        statusEl.style.color = 'var(--green)';
+    } else if (data.delay_status === 'Slight Delay') {
+        statusEl.textContent = `+${data.delay_minutes} min`;
+        statusEl.style.color = 'var(--yellow)';
+    } else {
+        statusEl.textContent = `Delayed +${data.delay_minutes} min`;
+        statusEl.style.color = 'var(--red)';
+    }
+    
+    // Update route progress
+    if (data.all_stops_eta && data.all_stops_eta.length > 0) {
+        const totalStops = data.all_stops_eta.length + getCompletedStops();
+        document.getElementById('stopProgress').textContent = 
+            `${getCompletedStops()}/${totalStops} STOPS`;
+    }
+    
+    // Update alert
+    if (data.delay_status !== 'On Time' && data.delay_minutes > 2) {
+        document.getElementById('alertMessage').textContent = 
+            `${data.delay_status} — expect +${data.delay_minutes} min`;
+        document.getElementById('alert').style.display = 'flex';
+    } else {
+        document.getElementById('alert').style.display = 'none';
+    }
+    
+    // Update SOS status
+    if (data.sos_active) {
+        document.getElementById('dutyStatus').innerHTML = 
+            '<i class="dot" style="background:var(--red);animation:blink 0.5s infinite"></i> SOS ACTIVE';
+        document.getElementById('dutyStatus').style.borderColor = 'var(--red)';
+        document.getElementById('dutyStatus').style.color = 'var(--red)';
+    } else if (state.dutyActive) {
+        document.getElementById('dutyStatus').innerHTML = 
+            '<i class="dot"></i> DUTY ACTIVE';
+        document.getElementById('dutyStatus').style.borderColor = '#00e5a044';
+        document.getElementById('dutyStatus').style.color = 'var(--green)';
+    }
+    
+    // Update report location
+    if (data.next_stop) {
+        document.getElementById('reportLocation').textContent = 
+            `${data.next_stop.station_name} — Stop #${getStopSequence(data.next_stop.station_id)}`;
+    }
+    
+    // Update profile
+    if (data.route_name) {
+        document.getElementById('profileRoute').textContent = data.route_name;
+    }
+}
+
+function getStopSequence(stationId) {
+    const match = stationId.match(/\d+/);
+    return match ? parseInt(match[0]) : '?';
+}
+
+function getCompletedStops() {
+    // In real implementation, track completed stops from backend
+    return 3; // Placeholder
+}
+
+// ============================================
+// ROUTE TRACK RENDERING
+// ============================================
+function updateRouteTrack(route) {
+    if (!route || !route.stations) return;
+    
+    const trackEl = document.getElementById('routeTrack');
+    const stations = route.stations;
+    
+    let html = '';
+    stations.forEach((station, index) => {
+        const isDone = index < getCompletedStops();
+        const isCurrent = index === getCompletedStops();
+        const labelClass = isDone ? 'done' : isCurrent ? 'current' : '';
+        const circleClass = isDone ? 'done' : isCurrent ? 'current' : '';
+        
+        html += `<div class="node">
+            <div class="circle ${circleClass}"></div>
+            <div class="node-label ${labelClass}">${station.station_name}</div>
+        </div>`;
+        
+        if (index < stations.length - 1) {
+            const connectorClass = index < getCompletedStops() ? 'done' : '';
+            html += `<div class="connector ${connectorClass}"></div>`;
+        }
+    });
+    
+    trackEl.innerHTML = html;
+    document.getElementById('routeInfo').textContent = `${route.route_name.toUpperCase()} · ROUTE`;
+    document.getElementById('stopsRouteName').textContent = route.route_name;
+}
+
+// ============================================
+// STOPS LIST RENDERING
+// ============================================
+function renderStopsList(data) {
+    const container = document.getElementById('stopsList');
+    // In real implementation, fetch stops from backend
+    // For demo, keep the static content
+}
+
+// ============================================
+// WEBSOCKET CONNECTION (Real-time updates)
+// ============================================
+function connectWebSocket() {
+    try {
+        const wsUrl = CONFIG.API_URL.replace('http', 'ws') + '/ws/live';
+        state.wsConnection = new WebSocket(wsUrl);
+        
+        state.wsConnection.onopen = () => {
+            console.log('WebSocket connected');
+            toast('🔄 Connected to live updates');
+        };
+        
+        state.wsConnection.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'live_status' && data.data) {
+                    if (data.data.bus_id === state.busId) {
+                        updateUI(data.data);
+                    }
+                }
+            } catch (e) {
+                console.error('WebSocket message error:', e);
+            }
+        };
+        
+        state.wsConnection.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+        
+        state.wsConnection.onclose = () => {
+            console.log('WebSocket closed, reconnecting in 5s...');
+            setTimeout(connectWebSocket, 5000);
+        };
+        
+        // Ping to keep connection alive
+        setInterval(() => {
+            if (state.wsConnection && state.wsConnection.readyState === WebSocket.OPEN) {
+                state.wsConnection.send('ping');
+            }
+        }, 30000);
+        
+    } catch (e) {
+        console.error('WebSocket connection failed:', e);
+        setTimeout(connectWebSocket, 5000);
+    }
+}
+
+// ============================================
+// ACTION HANDLERS
+// ============================================
+async function sendEmergency() {
+    if (confirm('🚨 Send SOS emergency alert to Control Room?')) {
+        state.sosActive = true;
+        toast('🆘 SOS Emergency Alert Sent!');
+        
+        // Send emergency status update
+        await sendTelemetry('emergency');
+        
+        // Update UI
+        document.getElementById('dutyStatus').innerHTML = 
+            '<i class="dot" style="background:var(--red);animation:blink 0.5s infinite"></i> SOS ACTIVE';
+        document.getElementById('dutyStatus').style.borderColor = 'var(--red)';
+        document.getElementById('dutyStatus').style.color = 'var(--red)';
+    }
+}
+
+function callControlRoom() {
+    toast('📞 Calling Control Room...');
+    // In real app: window.location.href = 'tel:+1234567890';
+}
+
+function openNavigation() {
+    const lat = state.currentLat;
+    const lng = state.currentLng;
+    toast('🗺️ Opening navigation...');
+    // In real app: open Google Maps
+    window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+}
+
+function requestBreak() {
+    toast('☕ Break request sent to dispatcher');
+}
+
+function endDuty() {
+    if (confirm('Are you sure you want to end your duty?')) {
+        state.dutyActive = false;
+        toast('🔴 Duty ended');
+        document.getElementById('dutyStatus').innerHTML = 'OFF DUTY';
+        document.getElementById('dutyStatus').style.borderColor = '#666';
+        document.getElementById('dutyStatus').style.color = '#666';
+        document.getElementById('dutyStatus').querySelector('.dot').style.display = 'none';
+    }
+}
+
+// ============================================
+// REPORT HANDLERS
+// ============================================
+function selectType(el) {
+    document.querySelectorAll('.type').forEach(x => x.classList.remove('selected'));
+    el.classList.add('selected');
+}
+
+async function sendReport() {
+    const type = document.querySelector('.type.selected b')?.textContent || 'General';
+    const notes = document.getElementById('reportNotes').textContent;
+    const location = document.getElementById('reportLocation').textContent;
+    
+    toast('📋 Sending report to Control Room...');
+    
+    // In real implementation, send to backend
+    // await apiRequest('/reports', { method: 'POST', body: JSON.stringify({ type, notes, location }) });
+    
+    // Simulate sending
+    setTimeout(() => {
+        toast('✅ Report sent successfully');
+        // Add to recent reports
+        const container = document.getElementById('recentReports');
+        const time = new Date().toLocaleTimeString();
+        const reportHtml = `
+            <div style="padding:11px 0;border-bottom:1px solid var(--line);font-size:12px">
+                <b>${type}</b>
+                <div style="color:var(--muted);font-size:10px;margin-top:3px">${location} · Sent · ${time}</div>
+            </div>
+        `;
+        container.insertAdjacentHTML('afterbegin', reportHtml);
+    }, 1500);
+}
+
+// ============================================
+// UI HELPERS
+// ============================================
+function switchTab(name) {
+    document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
+    document.getElementById(name).classList.add('active');
+    
+    document.querySelectorAll('.tab,.bn').forEach(x => x.classList.remove('active'));
+    const tabs = ['trip', 'stops', 'report', 'profile'];
+    const index = tabs.indexOf(name);
+    document.querySelectorAll('.tab')[index].classList.add('active');
+    document.querySelectorAll('.bn')[index].classList.add('active');
+    
+    // Refresh data when switching tabs
+    if (name === 'stops') {
+        fetchLiveStatus();
+    }
+}
+
+function dismissAlert() {
+    document.getElementById('alert').style.display = 'none';
+}
+
+function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(window.tt);
+    window.tt = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function clock() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    document.getElementById('clock').textContent = p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+async function init() {
+    // Start clock
+    clock();
+    setInterval(clock, 1000);
+    
+    // Fetch initial data
+    await fetchRoutes();
+    await fetchLiveStatus();
+    
+    // Send initial telemetry
+    await sendTelemetry();
+    
+    // Set up periodic updates
+    setInterval(async () => {
+        if (state.dutyActive) {
+            await sendTelemetry();
+        }
+    }, CONFIG.UPDATE_INTERVAL);
+    
+    // Connect WebSocket for real-time updates
+    connectWebSocket();
+    
+    // Simulate GPS movement
+    setInterval(() => {
+        if (state.dutyActive) {
+            simulateGPS();
+        }
+    }, 2000);
+    
+    toast('🚀 DriveOps connected');
+}
+
+// Start the app
+document.addEventListener('DOMContentLoaded', init);
+
+// ============================================
+// KEYBOARD SHORTCUTS (for testing)
+// ============================================
+document.addEventListener('keydown', (e) => {
+    if (e.key === '1') switchTab('trip');
+    if (e.key === '2') switchTab('stops');
+    if (e.key === '3') switchTab('report');
+    if (e.key === '4') switchTab('profile');
+    if (e.key === 'e') sendEmergency();
+    if (e.key === 'r') sendTelemetry('reached');
+});
+
+console.log('🚌 DriveOps Driver App');
+console.log('📡 Connected to:', CONFIG.API_URL);
+console.log('🔑 Device Key:', CONFIG.DEVICE_KEY);
+console.log('🚍 Bus ID:', CONFIG.BUS_ID);
+console.log('🛤️ Route ID:', CONFIG.ROUTE_ID);
+</script>
+
+</body></html>

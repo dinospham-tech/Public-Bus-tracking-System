@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4F46E5">
+    <title>Bus Driver App - Route Map</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f3f4f6;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .safe-area-top {
+            padding-top: env(safe-area-inset-top);
+        }
+        
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+            border-radius: 12px;
+        }
+        
+        .map-container {
+            height: 400px;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .custom-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .bus-marker {
+            background: #4F46E5;
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .stop-marker {
+            background: white;
+            border: 3px solid #4F46E5;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .stop-marker.completed {
+            background: #10B981;
+            border-color: #10B981;
+        }
+        
+        .stop-marker.current {
+            background: #F59E0B;
+            border-color: #F59E0B;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+            }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .emergency-pulse {
+            animation: emergencyPulse 1.5s infinite;
+        }
+        
+        @keyframes emergencyPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 40;
+        }
+        
+        .nav-item.active {
+            color: #4F46E5;
+        }
+        
+        .route-info-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .eta-badge {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Main App Container -->
+    <div id="app" class="max-w-md mx-auto min-h-screen bg-gray-100 relative">
+        
+        <!-- Status Bar -->
+        <div class="safe-area-top sticky top-0 z-30">
+            <div id="statusBar" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div id="onlineIndicator" class="w-3 h-3 rounded-full bg-green-400 animate-pulse"></div>
+                        <span id="statusText" class="font-semibold text-sm">ONLINE</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xs opacity-90">BUS-001</span>
+                        <button id="notificationBell" class="relative">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span id="notificationBadge" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center hidden">2</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="pb-20">
+            
+            <!-- Route Info Banner -->
+            <div class="route-info-banner text-white px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-xl font-bold">Route 42</h1>
+                        <p class="text-sm opacity-90">Central Station → Airport Terminal</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-sm font-semibold">Distance:</span>
+                        <p class="text-lg font-bold">12.5 km</p>
+                    </div>
+                </div>
+                <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+                    <div class="eta-badge rounded-lg py-2">
+                        <p class="text-xs opacity-90">Current Stop</p>
+                        <p class="font-semibold text-sm" id="currentStopName">Park Avenue</p>
+                    </div>
+                    <div class="eta-badge rounded-lg py-2">
+                        <p class="text-xs opacity-90">Next Stop</p>
+                        <p class="font-semibold text-sm" id="nextStopName">5th Avenue</p>
+                    </div>
+                    <div class="eta-badge rounded-lg py-2">
+                        <p class="text-xs opacity-90">Est. Arrival</p>
+                        <p class="font-semibold text-sm" id="estArrivalTime">10:48 AM</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trip Controls -->
+            <div class="px-4 pt-4">
+                <div class="bg-white rounded-2xl shadow-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-route text-indigo-600"></i>
+                            <span class="font-semibold text-gray-800">Trip Controls</span>
+                        </div>
+                        <span id="tripTime" class="text-sm font-semibold text-gray-700">00:00:00</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="startBtn" class="col-span-1 py-3 bg-green-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform">
+                            <i class="fas fa-play mr-1"></i> Start
+                        </button>
+                        <button id="pauseBtn" class="col-span-1 py-3 bg-yellow-500 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform opacity-50" disabled>
+                            <i class="fas fa-pause mr-1"></i> Pause
+                        </button>
+                        <button id="stopBtn" class="col-span-1 py-3 bg-red-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform opacity-50" disabled>
+                            <i class="fas fa-stop mr-1"></i> Stop
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Map View -->
+            <div class="px-4 pt-3">
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <div class="p-3 border-b flex items-center justify-between">
+                        <h2 class="font-semibold text-gray-800">Live Route Map</h2>
+                        <div class="flex items-center space-x-2">
+                            <button id="centerMapBtn" class="p-2 bg-indigo-100 text-indigo-600 rounded-lg active:scale-95 transition-transform">
+                                <i class="fas fa-location-arrow"></i>
+                            </button>
+                            <button id="fullscreenMapBtn" class="p-2 bg-indigo-100 text-indigo-600 rounded-lg active:scale-95 transition-transform">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="map-container">
+                        <div id="map"></div>
+                    </div>
+                    <!-- Map Legend -->
+                    <div class="p-3 bg-gray-50 flex items-center justify-between text-xs">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-indigo-600 border-2 border-white shadow"></div>
+                            <span>Bus Location</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-yellow-500 border-2 border-yellow-500"></div>
+                            <span>Current Stop</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-green-500 border-2 border-green-500"></div>
+                            <span>Completed</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-gray-300 border-2 border-gray-400"></div>
+                            <span>Upcoming</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Route Timeline -->
+            <div class="px-4 pt-3">
+                <div class="bg-white rounded-2xl shadow-lg p-4">
+                    <h2 class="font-semibold text-gray-800 mb-3">Route Timeline</h2>
+                    <div class="relative">
+                        <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                        <div id="routeProgress" class="space-y-4">
+                            <!-- Route stops will be dynamically inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Stats Grid -->
+            <div class="px-4 pt-3 grid grid-cols-3 gap-3">
+                <div class="bg-white rounded-xl shadow p-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <i class="fas fa-tachometer-alt text-indigo-600"></i>
+                        <span class="text-xs text-gray-500">Speed</span>
+                    </div>
+                    <p class="text-xl font-bold text-gray-800" id="speedDisplay">0</p>
+                    <p class="text-xs text-gray-500">km/h</p>
+                </div>
+                <div class="bg-white rounded-xl shadow p-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <i class="fas fa-users text-indigo-600"></i>
+                        <span class="text-xs text-gray-500">Passengers</span>
+                    </div>
+                    <p class="text-xl font-bold text-gray-800" id="passengerDisplay">0</p>
+                    <p class="text-xs text-gray-500">/ 40</p>
+                </div>
+                <div class="bg-white rounded-xl shadow p-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <i class="fas fa-clock text-indigo-600"></i>
+                        <span class="text-xs text-gray-500">On Time</span>
+                    </div>
+                    <p class="text-xl font-bold text-green-600" id="onTimeStatus">Yes</p>
+                    <p class="text-xs text-gray-500">+2 min</p>
+                </div>
+            </div>
+
+            <!-- Passenger Management -->
+            <div class="px-4 pt-3">
+                <div class="bg-white rounded-xl shadow p-4">
+                    <h2 class="text-sm font-bold text-gray-800 mb-3">Passenger Count</h2>
+                    <div class="flex items-center justify-between">
+                        <button id="decreasePassenger" class="w-12 h-12 bg-red-100 text-red-600 rounded-xl text-2xl font-bold active:scale-95 transition-transform">
+                            -
+                        </button>
+                        <div class="text-center">
+                            <p class="text-3xl font-bold text-indigo-600" id="passengerCount">0</p>
+                            <div class="mt-2 w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                <div id="capacityBar" class="h-full bg-green-500 transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1" id="capacityText">0% Full</p>
+                        </div>
+                        <button id="increasePassenger" class="w-12 h-12 bg-green-100 text-green-600 rounded-xl text-2xl font-bold active:scale-95 transition-transform">
+                            +
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="px-4 pt-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="reportIssue" class="bg-white rounded-xl shadow p-4 text-center active:scale-95 transition-transform">
+                        <i class="fas fa-exclamation-circle text-2xl text-yellow-500 mb-2"></i>
+                        <p class="text-sm font-semibold text-gray-700">Report Issue</p>
+                    </button>
+                    <button id="callDispatch" class="bg-white rounded-xl shadow p-4 text-center active:scale-95 transition-transform">
+                        <i class="fas fa-phone-alt text-2xl text-indigo-600 mb-2"></i>
+                        <p class="text-sm font-semibold text-gray-700">Call Dispatch</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergency Button -->
+        <button id="emergencyBtn" class="emergency-pulse fixed bottom-24 right-4 w-16 h-16 bg-red-600 text-white rounded-full shadow-2xl flex items-center justify-center z-30 active:scale-95 transition-transform">
+            <i class="fas fa-exclamation-triangle text-2xl"></i>
+        </button>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="flex justify-around items-center py-2 px-4">
+                <button class="nav-item active flex flex-col items-center" data-tab="home">
+                    <i class="fas fa-home text-xl"></i>
+                    <span class="text-xs mt-1">Home</span>
+                </button>
+                <button class="nav-item flex flex-col items-center" data-tab="map">
+                    <i class="fas fa-map text-xl"></i>
+                    <span class="text-xs mt-1">Map</span>
+                </button>
+                <button class="nav-item flex flex-col items-center" data-tab="route">
+                    <i class="fas fa-route text-xl"></i>
+                    <span class="text-xs mt-1">Route</span>
+                </button>
+                <button class="nav-item flex flex-col items-center" data-tab="profile">
+                    <i class="fas fa-user text-xl"></i>
+                    <span class="text-xs mt-1">Profile</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Fullscreen Map Modal -->
+        <div id="fullscreenMapModal" class="fixed inset-0 z-50 hidden bg-white">
+            <div class="h-full flex flex-col">
+                <div class="p-4 bg-indigo-600 text-white flex items-center justify-between">
+                    <h3 class="font-bold">Route Map</h3>
+                    <button id="closeFullscreenMap" class="p-2 hover:bg-white/20 rounded-lg">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="flex-1 relative">
+                    <div id="fullscreenMap"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Map variables
+        let map = null;
+        let fullscreenMap = null;
+        let busMarker = null;
+        let fullscreenBusMarker = null;
+        let routePath = null;
+        let fullscreenRoutePath = null;
+        const stopMarkers = [];
+        const fullscreenStopMarkers = [];
+
+        // Route coordinates (mock data - replace with actual route)
+        const routeCoordinates = [
+            [40.7128, -74.0060],  // Central Station
+            [40.7140, -74.0085],  // Main Street
+            [40.7155, -74.0110],  // Park Avenue
+            [40.7170, -74.0135],  // 5th Avenue
+            [40.7185, -74.0160],  // Market Square
+            [40.7200, -74.0185]   // Airport Terminal
+        ];
+
+        // Schedule data with coordinates
+        const schedule = [
+            { 
+                id: 1, 
+                stop: 'Central Station', 
+                arrival: '10:30', 
+                departure: '10:32', 
+                status: 'completed',
+                coordinates: [40.7128, -74.0060]
+            },
+            { 
+                id: 2, 
+                stop: 'Main Street', 
+                arrival: '10:35', 
+                departure: '10:37', 
+                status: 'completed',
+                coordinates: [40.7140, -74.0085]
+            },
+            { 
+                id: 3, 
+                stop: 'Park Avenue', 
+                arrival: '10:42', 
+                departure: '10:44', 
+                status: 'current',
+                coordinates: [40.7155, -74.0110]
+            },
+            { 
+                id: 4, 
+                stop: '5th Avenue', 
+                arrival: '10:48', 
+                departure: '10:50', 
+                status: 'pending',
+                coordinates: [40.7170, -74.0135]
+            },
+            { 
+                id: 5, 
+                stop: 'Market Square', 
+                arrival: '10:55', 
+                departure: '10:57', 
+                status: 'pending',
+                coordinates: [40.7185, -74.0160]
+            },
+            { 
+                id: 6, 
+                stop: 'Airport Terminal', 
+                arrival: '11:05', 
+                departure: '11:10', 
+                status: 'pending',
+                coordinates: [40.7200, -74.0185]
+            }
+        ];
+
+        // App State
+        const state = {
+            isOnline: false,
+            tripStarted: false,
+            tripPaused: false,
+            passengerCount: 0,
+            maxPassengers: 40,
+            speed: 0,
+            currentStopIndex: 2,
+            tripStartTime: null,
+            tripElapsedTime: 0,
+            tripTimerInterval: null,
+            speedInterval: null,
+            locationUpdateInterval: null,
+            currentLocation: [40.7155, -74.0110], // Start at current stop
+            mapInitialized: false
+        };
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeMap();
+            renderSchedule();
+            updatePassengerDisplay();
+            updateCurrentStop(state.currentStopIndex);
+            initializeEventListeners();
+            
+            // Simulate bus movement
+            setInterval(() => {
+                if (state.tripStarted && !state.tripPaused) {
+                    simulateBusMovement();
+                }
+            }, 3000);
+        });
+
+        function initializeMap() {
+            // Initialize main map
+            map = L.map('map', {
+                center: routeCoordinates[state.currentStopIndex],
+                zoom: 14,
+                zoomControl: false
+            });
+
+            // Add tile layer (OpenStreetMap)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Initialize fullscreen map
+            fullscreenMap = L.map('fullscreenMap', {
+                center: routeCoordinates[state.currentStopIndex],
+                zoom: 14,
+                zoomControl: true
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(fullscreenMap);
+
+            // Draw route path
+            drawRoutePath();
+            
+            // Add stop markers
+            addStopMarkers();
+            
+            // Add bus marker
+            addBusMarker();
+
+            state.mapInitialized = true;
+        }
+
+        function drawRoutePath() {
+            // Main map route path
+            routePath = L.polyline(routeCoordinates, {
+                color: '#4F46E5',
+                weight: 4,
+                opacity: 0.7,
+                dashArray: '10, 10'
+            }).addTo(map);
+
+            // Fullscreen map route path
+            fullscreenRoutePath = L.polyline(routeCoordinates, {
+                color: '#4F46E5',
+                weight: 4,
+                opacity: 0.7,
+                dashArray: '10, 10'
+            }).addTo(fullscreenMap);
+        }
+
+        function addStopMarkers() {
+            schedule.forEach((stop, index) => {
+                // Main map marker
+                const marker = L.marker(stop.coordinates, {
+                    icon: createStopIcon(stop.status),
+                    title: stop.stop
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <div class="p-2">
+                        <strong>${stop.stop}</strong><br>
+                        <small>Arrival: ${stop.arrival}</small><br>
+                        <small>Departure: ${stop.departure}</small>
+                    </div>
+                `);
+                
+                stopMarkers.push(marker);
+
+                // Fullscreen map marker
+                const fullscreenMarker = L.marker(stop.coordinates, {
+                    icon: createStopIcon(stop.status),
+                    title: stop.stop
+                }).addTo(fullscreenMap);
+                
+                fullscreenMarker.bindPopup(`
+                    <div class="p-2">
+                        <strong>${stop.stop}</strong><br>
+                        <small>Arrival: ${stop.arrival}</small><br>
+                        <small>Departure: ${stop.departure}</small>
+                    </div>
+                `);
+                
+                fullscreenStopMarkers.push(fullscreenMarker);
+            });
+        }
+
+        function createStopIcon(status) {
+            let color;
+            switch(status) {
+                case 'completed':
+                    color = '#10B981'; // Green
+                    break;
+                case 'current':
+                    color = '#F59E0B'; // Yellow
+                    break;
+                default:
+                    color = '#9CA3AF'; // Gray
+            }
+
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `<div class="stop-marker ${status}" style="background: ${color}; border-color: ${color};"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+        }
+
+        function createBusIcon() {
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `<div class="bus-marker">
+                    <i class="fas fa-bus text-white text-lg"></i>
+                </div>`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+        }
+
+        function addBusMarker() {
+            busMarker = L.marker(state.currentLocation, {
+                icon: createBusIcon(),
+                title: 'Current Bus Location',
+                zIndexOffset: 1000
+            }).addTo(map);
+
+            fullscreenBusMarker = L.marker(state.currentLocation, {
+                icon: createBusIcon(),
+                title: 'Current Bus Location',
+                zIndexOffset: 1000
+            }).addTo(fullscreenMap);
+        }
+
+        function updateBusPosition(newPosition) {
+            state.currentLocation = newPosition;
+            
+            if (busMarker) {
+                busMarker.setLatLng(newPosition);
+            }
+            
+            if (fullscreenBusMarker) {
+                fullscreenBusMarker.setLatLng(newPosition);
+            }
+
+            // Optionally center map on bus
+            if (state.mapInitialized) {
+                map.panTo(newPosition);
+                fullscreenMap.panTo(newPosition);
+            }
+        }
+
+        function simulateBusMovement() {
+            const currentIndex = state.currentStopIndex;
+            const nextIndex = Math.min(currentIndex + 1, schedule.length - 1);
+            
+            if (currentIndex < schedule.length - 1) {
+                const currentCoord = schedule[currentIndex].coordinates;
+                const nextCoord = schedule[nextIndex].coordinates;
+                
+                // Interpolate between current and next stop
+                const lat = currentCoord[0] + (nextCoord[0] - currentCoord[0]) * 0.3;
+                const lng = currentCoord[1] + (nextCoord[1] - currentCoord[1]) * 0.3;
+                
+                updateBusPosition([lat, lng]);
+                
+                // Update speed
+                state.speed = Math.floor(25 + Math.random() * 20);
+                updateSpeedDisplay();
+            }
+        }
+
+        function updateStopMarkers() {
+            // Update main map markers
+            stopMarkers.forEach((marker, index) => {
+                const stop = schedule[index];
+                marker.setIcon(createStopIcon(stop.status));
+            });
+            
+            // Update fullscreen map markers
+            fullscreenStopMarkers.forEach((marker, index) => {
+                const stop = schedule[index];
+                marker.setIcon(createStopIcon(stop.status));
+            });
+        }
+
+        function updateCurrentStop(index) {
+            state.currentStopIndex = index;
+            
+            // Update schedule statuses
+            schedule.forEach((stop, i) => {
+                if (i < index) {
+                    stop.status = 'completed';
+                } else if (i === index) {
+                    stop.status = 'current';
+                } else {
+                    stop.status = 'pending';
+                }
+            });
+            
+            renderSchedule();
+            updateStopMarkers();
+            updateNextStopDisplay();
+            
+            // Move bus to current stop location
+            if (schedule[index]) {
+                updateBusPosition(schedule[index].coordinates);
+            }
+        }
+
+        function updateNextStopDisplay() {
+            const currentStop = schedule[state.currentStopIndex];
+            const nextStop = schedule[Math.min(state.currentStopIndex + 1, schedule.length - 1)];
+            
+            if (currentStop) {
+                document.getElementById('currentStopName').textContent = currentStop.stop;
+            }
+            
+            if (nextStop) {
+                document.getElementById('nextStopName').textContent = nextStop.stop;
+                document.getElementById('estArrivalTime').textContent = nextStop.arrival;
+            }
+        }
+
+        function renderSchedule() {
+            const container = document.getElementById('routeProgress');
+            container.innerHTML = '';
+            
+            schedule.forEach((stop, index) => {
+                const stopElement = document.createElement('div');
+                stopElement.className = 'relative flex items-start space-x-3 ml-2';
+                stopElement.id = `stop-${stop.id}`;
+                
+                const statusIcon = getStatusIcon(stop.status);
+                const statusColor = getStatusColor(stop.status);
+                
+                stopElement.innerHTML = `
+                    <div class="relative z-10">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-white border-3 ${statusColor} shadow-md">
+                            <i class="fas ${statusIcon} text-sm ${getStatusTextColor(stop.status)}"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 bg-white rounded-lg p-3 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <p class="font-semibold text-sm text-gray-800">${stop.stop}</p>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs text-gray-500">${stop.arrival}</span>
+                                ${stop.status === 'current' ? 
+                                    `<button class="text-xs bg-indigo-600 text-white px-3 py-1 rounded-lg font-medium" onclick="markStopArrival(${index})">
+                                        Arrived
+                                    </button>` : 
+                                    ''
+                                }
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-1">Departure: ${stop.departure}</p>
+                    </div>
+                `;
+                
+                container.appendChild(stopElement);
+            });
+        }
+
+        function markStopArrival(index) {
+            if (index < schedule.length - 1) {
+                updateCurrentStop(index + 1);
+                addNotification(`Arrived at ${schedule[index].stop}`, 'Just now', 'success');
+                
+                if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+                
+                // Update route path to show completed portion
+                updateRouteProgress();
+            } else {
+                addNotification('Final destination reached', 'Just now', 'success');
+                if (confirm('You have reached the final destination. End trip?')) {
+                    stopTrip();
+                }
+            }
+        }
+
+        function updateRouteProgress() {
+            // Update route path to show completed portion in solid line
+            const completedCoords = routeCoordinates.slice(0, state.currentStopIndex + 1);
+            const remainingCoords = routeCoordinates.slice(state.currentStopIndex);
+            
+            if (routePath) {
+                map.removeLayer(routePath);
+                routePath = L.polyline(completedCoords, {
+                    color: '#10B981',
+                    weight: 4,
+                    opacity: 0.8
+                }).addTo(map);
+                
+                L.polyline(remainingCoords, {
+                    color: '#4F46E5',
+                    weight: 4,
+                    opacity: 0.5,
+                    dashArray: '10, 10'
+                }).addTo(map);
+            }
+        }
+
+        function initializeEventListeners() {
+            // Trip controls
+            document.getElementById('startBtn').addEventListener('click', startTrip);
+            document.getElementById('pauseBtn').addEventListener('click', pauseTrip);
+            document.getElementById('stopBtn').addEventListener('click', stopTrip);
+            
+            // Passenger management
+            document.getElementById('increasePassenger').addEventListener('click', () => updatePassengerCount(1));
+            document.getElementById('decreasePassenger').addEventListener('click', () => updatePassengerCount(-1));
+            
+            // Map controls
+            document.getElementById('centerMapBtn').addEventListener('click', centerMapOnBus);
+            document.getElementById('fullscreenMapBtn').addEventListener('click', openFullscreenMap);
+            document.getElementById('closeFullscreenMap').addEventListener('click', closeFullscreenMap);
+            
+            // Emergency
+            document.getElementById('emergencyBtn').addEventListener('click', openEmergencyModal);
+            
+            // Report issue
+            document.getElementById('reportIssue').addEventListener('click', openReportModal);
+            
+            // Call dispatch
+            document.getElementById('callDispatch').addEventListener('click', callDispatch);
+            
+            // Notifications
+            document.getElementById('notificationBell').addEventListener('click', openNotifications);
+            
+            // Bottom navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    item.classList.add('active');
+                    handleTabChange(item.dataset.tab);
+                });
+            });
+        }
+
+        function centerMapOnBus() {
+            if (map && state.currentLocation) {
+                map.setView(state.currentLocation, 16);
+                fullscreenMap.setView(state.currentLocation, 16);
+            }
+        }
+
+        function openFullscreenMap() {
+            document.getElementById('fullscreenMapModal').classList.remove('hidden');
+            setTimeout(() => {
+                fullscreenMap.invalidateSize();
+                fullscreenMap.setView(state.currentLocation, 14);
+            }, 100);
+        }
+
+        function closeFullscreenMap() {
+            document.getElementById('fullscreenMapModal').classList.add('hidden');
+        }
+
+        function handleTabChange(tab) {
+            switch(tab) {
+                case 'map':
+                    openFullscreenMap();
+                    break;
+                case 'route':
+                    // Scroll to route timeline
+                    document.querySelector('#routeProgress').scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                    break;
+                case 'profile':
+                    showProfile();
+                    break;
+                case 'home':
+                    // Scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    break;
+            }
+        }
+
+        function showProfile() {
+            // Simple profile alert for demo
+            alert('Driver Profile\nName: John Doe\nEmployee ID: DRV-001\nExperience: 5 years');
+        }
+
+        function startTrip() {
+            if (state.tripStarted) return;
+            
+            state.isOnline = true;
+            state.tripStarted = true;
+            state.tripPaused = false;
+            state.tripStartTime = Date.now();
+            
+            // Update UI
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').classList.add('opacity-50');
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('pauseBtn').classList.remove('opacity-50');
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('stopBtn').classList.remove('opacity-50');
+            
+            // Start trip timer
+            state.tripTimerInterval = setInterval(updateTripTimer, 1000);
+            
+            // Start speed simulation
+            state.speedInterval = setInterval(updateSpeed, 2000);
+            
+            // Update status
+            updateStatusBar();
+            
+            // Add notification
+            addNotification('Trip started', 'Just now', 'success');
+            
+            // Initialize route progress
+            updateRouteProgress();
+            
+            // Vibrate on start
+            if (navigator.vibrate) navigator.vibrate(100);
+        }
+
+        function pauseTrip() {
+            if (!state.tripStarted) return;
+            
+            state.tripPaused = !state.tripPaused;
+            
+            if (state.tripPaused) {
+                document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-play mr-1"></i> Resume';
+                document.getElementById('pauseBtn').classList.remove('bg-yellow-500');
+                document.getElementById('pauseBtn').classList.add('bg-blue-
