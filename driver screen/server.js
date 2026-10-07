@@ -57,8 +57,18 @@ app.get('/live/:busId', (req, res) => {
 app.post('/telemetry', (req, res) => {
     const { bus_id, route_id, lat, lng, speed_kmh, timestamp, action } = req.body || {};
 
-    if (!bus_id || typeof lat !== 'number' || typeof lng !== 'number') {
-        return res.status(400).json({ detail: 'bus_id, lat, and lng are required' });
+    if (typeof bus_id !== 'string' || !bus_id.trim() ||
+        typeof lat !== 'number' || !Number.isFinite(lat) || lat < -90 || lat > 90 ||
+        typeof lng !== 'number' || !Number.isFinite(lng) || lng < -180 || lng > 180 ||
+        typeof speed_kmh !== 'number' || !Number.isFinite(speed_kmh) || speed_kmh < 0 || speed_kmh > 150 ||
+        !Number.isInteger(timestamp) || timestamp <= 0) {
+        return res.status(400).json({ detail: 'bus_id, valid coordinates, speed_kmh (0–150), and a positive integer timestamp are required' });
+    }
+    if (route_id !== undefined && (typeof route_id !== 'string' || !route_id.trim())) {
+        return res.status(400).json({ detail: 'route_id must be a non-empty string' });
+    }
+    if (action !== undefined && !['update', 'reached', 'skipped', 'emergency'].includes(action)) {
+        return res.status(400).json({ detail: 'action must be update, reached, skipped, or emergency' });
     }
     if (!getRoute(route_id || 'demo')) {
         return res.status(404).json({ detail: `Unknown route_id: ${route_id}` });
@@ -74,6 +84,7 @@ app.post('/telemetry', (req, res) => {
         speed_kmh,
         timestamp,
         sos_active,
+        action,
     });
 
     broadcastLiveStatus(liveStatus);

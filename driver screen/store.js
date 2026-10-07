@@ -32,9 +32,15 @@ function getBus(busId) {
  * has arrived at its next station, and return the computed live-status payload
  * shaped exactly how the frontend's updateUI() expects it.
  */
-function applyTelemetry({ bus_id, route_id, lat, lng, speed_kmh, timestamp, sos_active }) {
+function applyTelemetry({ bus_id, route_id, lat, lng, speed_kmh, timestamp, sos_active, action }) {
     const route = getRoute(route_id) || getRoute('demo');
     const bus = getOrCreateBus(bus_id, route.route_id);
+
+    if (bus.route_id !== route.route_id) {
+        bus.route_id = route.route_id;
+        bus.current_stop_index = 0;
+        bus.duty_start_ts = null;
+    }
 
     bus.lat = lat;
     bus.lng = lng;
@@ -43,7 +49,11 @@ function applyTelemetry({ bus_id, route_id, lat, lng, speed_kmh, timestamp, sos_
     if (!bus.duty_start_ts) bus.duty_start_ts = bus.last_update_ts;
     if (typeof sos_active === 'boolean') bus.sos_active = sos_active;
 
-    advanceStopIfArrived(bus, route);
+    if (action === 'reached' || action === 'skipped') {
+        bus.current_stop_index = Math.min(bus.current_stop_index + 1, route.stations.length - 1);
+    } else {
+        advanceStopIfArrived(bus, route);
+    }
 
     return buildLiveStatus(bus, route);
 }
@@ -79,20 +89,20 @@ function classifyDelay(delayMinutes) {
 /** Builds the response shape consumed by the frontend's updateUI(). */
 function buildLiveStatus(bus, route) {
     const stations = route.stations;
-    const nextIndex = Math.min(bus.current_stop_index + 1, stations.length - 1);
-    const nextStation = stations[nextIndex];
+    const nextIndex = bus.current_stop_index + 1;
+    const nextStation = nextIndex < stations.length ? stations[nextIndex] : null;
     const hasPosition = bus.lat != null && bus.lng != null;
 
-    const distToNext = hasPosition
+    const distToNext = hasPosition && nextStation
         ? distanceKm(bus.lat, bus.lng, nextStation.lat, nextStation.lng)
-        : 0;
-    const etaToNext = etaMinutes(distToNext, bus.speed_kmh);
+        : null;
+    const etaToNext = distToNext === null ? null : etaMinutes(distToNext, bus.speed_kmh);
 
     // Remaining stops after the next one, with cumulative ETA.
     const all_stops_eta = [];
-    let cumulativeEta = etaToNext;
-    let prevStation = nextStation;
-    for (let i = nextIndex + 1; i < stations.length; i++) {
+    let cumulativeEta = etaToNext || 0;
+    let prevStation = nextStation || stations[stations.length - 1];
+    for (let i = nextStation ? nextIndex + 1 : stations.length; i < stations.length; i++) {
         const station = stations[i];
         const legDist = distanceKm(prevStation.lat, prevStation.lng, station.lat, station.lng);
         cumulativeEta += etaMinutes(legDist, bus.speed_kmh);
@@ -120,11 +130,12 @@ function buildLiveStatus(bus, route) {
         lat: bus.lat,
         lng: bus.lng,
         current_speed_kmh: Math.round(bus.speed_kmh || 0),
-        next_stop: {
+        next_stop: nextStation ? {
             station_id: nextStation.station_id,
             station_name: nextStation.station_name,
             eta_minutes: etaToNext,
-        },
+            distance_km: Math.round(distToNext * 100) / 100,
+        } : null,
         all_stops_eta,
         completed_stops: bus.current_stop_index,
         total_stops: stations.length,

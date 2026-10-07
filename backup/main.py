@@ -42,7 +42,7 @@ class Settings:
 
 
 def load_settings() -> Settings:
-    device_api_key = os.getenv("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")
+    device_api_key = os.getenv("DEVICE_API_KEY")
 
     if not device_api_key:
         raise RuntimeError(

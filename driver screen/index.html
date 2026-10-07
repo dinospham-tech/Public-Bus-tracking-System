@@ -1228,6 +1228,7 @@
             nextStop: null,
             allStops: [],
             routeStations: [],
+            completedStops: 0,
             sosActive: false,
             dutyActive: true,
             wsConnection: null,
@@ -1265,19 +1266,21 @@
         // TELEMETRY SIMULATION (GPS + Speed)
         // ============================================
         function simulateGPS() {
-            // Simulate moving along the route with some randomness
-            const latVariation = (Math.random() - 0.5) * 0.001;
-            const lngVariation = (Math.random() - 0.5) * 0.001;
-
-            state.currentLat += latVariation * 0.5;
-            state.currentLng += lngVariation * 0.5;
             state.currentSpeed = 20 + Math.random() * 30; // 20-50 km/h
 
-            // If we have a next stop, slowly move towards it
-            if (state.nextStop && state.nextStop.distance_km > 0.1) {
-                // Simulate progress
-                const progress = (state.currentSpeed / 60) * 0.1; // km per 10 seconds
-                // In real app, this would be actual GPS data
+            const targetIndex = Math.min(state.completedStops + 1, state.routeStations.length - 1);
+            const target = state.routeStations[targetIndex];
+            if (target) {
+                const lat1 = state.currentLat * Math.PI / 180;
+                const lat2 = target.lat * Math.PI / 180;
+                const dLat = lat2 - lat1;
+                const dLng = (target.lng - state.currentLng) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+                const distanceKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                const stepKm = state.currentSpeed * (CONFIG.UPDATE_INTERVAL / 1000) / 3600;
+                const fraction = distanceKm > 0 ? Math.min(1, stepKm / distanceKm) : 1;
+                state.currentLat += (target.lat - state.currentLat) * fraction;
+                state.currentLng += (target.lng - state.currentLng) * fraction;
             }
 
             return {
@@ -1303,6 +1306,7 @@
                 toast('⏭️ Skipping stop...');
             }
 
+            if (action !== 'update') telemetryData.action = action;
             const result = await apiRequest('/telemetry', {
                 method: 'POST',
                 body: JSON.stringify(telemetryData),
@@ -1355,6 +1359,20 @@
                 document.getElementById('eta').textContent = data.next_stop.eta_minutes;
                 document.getElementById('nextStopSub').textContent =
                     `Stop #${getStopSequence(data.next_stop.station_id)} · ${data.route_name}`;
+            }
+
+            if (Number.isInteger(data.completed_stops)) {
+                state.completedStops = data.completed_stops;
+                if (state.routeStations.length) updateRouteTrack({ route_name: data.route_name, stations: state.routeStations });
+                const total = Number.isInteger(data.total_stops) ? data.total_stops : state.routeStations.length;
+                document.getElementById('stopProgress').textContent = `${state.completedStops}/${total} STOPS`;
+            }
+
+            if (!data.next_stop && Number.isInteger(data.completed_stops)) {
+                state.nextStop = null;
+                document.getElementById('nextStopName').textContent = 'Route complete';
+                document.getElementById('eta').textContent = '—';
+                document.getElementById('nextStopSub').textContent = data.route_name || '';
             }
 
             // Update speed
@@ -1420,8 +1438,7 @@
         }
 
         function getCompletedStops() {
-            // In real implementation, track completed stops from backend
-            return 3; // Placeholder
+            return state.completedStops;
         }
 
         // ============================================
@@ -1570,16 +1587,16 @@
 
         async function sendReport() {
             const type = document.querySelector('.type.selected b')?.textContent || 'General';
-            const notes = document.getElementById('reportNotes').textContent;
+            const notes = document.getElementById('reportNotes').innerText.trim();
             const location = document.getElementById('reportLocation').textContent;
 
             toast('📋 Sending report to Control Room...');
 
-            // In real implementation, send to backend
-            // await apiRequest('/reports', { method: 'POST', body: JSON.stringify({ type, notes, location }) });
-
-            // Simulate sending
-            setTimeout(() => {
+            const report = await apiRequest('/reports', {
+                method: 'POST',
+                body: JSON.stringify({ bus_id: state.busId, type, notes, location }),
+            });
+            if (report) {
                 toast('✅ Report sent successfully');
                 // Add to recent reports
                 const container = document.getElementById('recentReports');
@@ -1591,7 +1608,7 @@
             </div>
         `;
                 container.insertAdjacentHTML('afterbegin', reportHtml);
-            }, 1500);
+            }
         }
 
         // ============================================
@@ -1655,13 +1672,6 @@
 
             // Connect WebSocket for real-time updates
             connectWebSocket();
-
-            // Simulate GPS movement
-            setInterval(() => {
-                if (state.dutyActive) {
-                    simulateGPS();
-                }
-            }, 2000);
 
             toast('🚀 DriveOps connected');
         }
