@@ -272,6 +272,7 @@ body {
 .sp-dot { width:5px; height:5px; border-radius:50%; animation:blink 1.5s infinite; }
 .sp-ontime  { background:#DCFCE7; color:#16A34A; }
 .sp-delayed { background:#FEE2E2; color:#DC2626; }
+.sp-slight  { background:#FEF3C7; color:#B45309; }
 .sp-early   { background:#DBEAFE; color:#1D4ED8; }
 
 .bc-divider { height:1px; background:#F0F4FF; margin:8px 0; }
@@ -560,6 +561,38 @@ body.dark-mode .profile-card { box-shadow:0 8px 20px #00000033; }
 body.dark-mode .float-alert { background:#243B5A; }
 body.dark-mode .route-picker { background:#273449; border-color:#475569; }
 body.dark-mode .route-select { background:#1F2937; border-color:#475569; color:#F8FAFC; }
+@media (min-width: 700px) {
+  body { min-height:100dvh; padding:24px; }
+  .phone { width:min(460px,100%); height:min(900px,calc(100dvh - 48px)); border-radius:38px; }
+  .screen { border-radius:32px; }
+  .island,.pb { display:none; }
+}
+@media (max-width: 699px) {
+  body { min-height:100dvh; }
+  .phone { width:100vw; height:100dvh; min-height:560px; border-radius:0; box-shadow:none; }
+  .screen { border-radius:0; }
+  .island,.pb { display:none; }
+}
+/* Full web application shell: the device frame and OS status chrome are not part of the app. */
+body { display:block; min-height:100dvh; padding:0; background:#F2F6FC; }
+.phone { width:100%; height:100dvh; min-height:560px; border-radius:0; box-shadow:none; }
+.screen { border-radius:0; }
+.sbar,.island,.pb,.notif-btn { display:none !important; }
+.header { display:flex; flex-wrap:wrap; align-items:center; gap:12px 28px; padding:18px clamp(18px,4vw,56px); }
+.header-top { margin:0; }
+.header > .search-bar { flex:1; min-width:min(320px,100%); max-width:680px; }
+.route-picker { flex-basis:100%; max-width:680px; margin:0 0 0 auto; }
+.tabs { padding:0 clamp(18px,4vw,56px); }
+.main { width:min(1180px,100%); margin:0 auto; }
+.bnav { display:none; }
+@media (max-width: 699px) {
+  .header { gap:10px; padding:14px 16px; }
+  .header > .search-bar { min-width:0; max-width:none; }
+  .route-picker { flex-basis:100%; max-width:none; }
+  .tabs { display:none; }
+  .main { width:100%; }
+  .bnav { display:flex; padding-bottom:max(10px,env(safe-area-inset-bottom)); }
+}
 </style>
 </head>
 <body>
@@ -624,17 +657,17 @@ body.dark-mode .route-select { background:#1F2937; border-color:#475569; color:#
 
     <!-- Tabs -->
     <div class="tabs">
-      <button class="tab" onclick="switchTab('home',this)">Near Me</button>
+      <button class="tab active" onclick="switchTab('home',this)">Near Me</button>
       <button class="tab" onclick="switchTab('schedule',this)">Schedule</button>
       <button class="tab" onclick="switchTab('mapview',this)">Map</button>
-      <button class="tab active" onclick="switchTab('profile',this)">Profile</button>
+      <button class="tab" onclick="switchTab('profile',this)">Profile</button>
     </div>
 
     <!-- Main -->
     <div class="main">
 
       <!-- ===== HOME ===== -->
-      <div class="sec" id="sec-home">
+      <div class="sec active" id="sec-home">
 
         <!-- SIGNATURE: Approach Visualizer -->
         <div class="approach-card">
@@ -647,7 +680,7 @@ body.dark-mode .route-select { background:#1F2937; border-color:#475569; color:#
             <div class="ac-right">
               <div class="ac-eta-num" id="homeEta">1</div>
               <div class="ac-eta-label">MIN AWAY</div>
-              <div class="ac-status">● On time</div>
+              <div class="ac-status" id="liveStatus" aria-live="polite">Connecting to live bus…</div>
             </div>
           </div>
 
@@ -682,10 +715,10 @@ body.dark-mode .route-select { background:#1F2937; border-color:#475569; color:#
           </div>
 
           <div class="ac-chips">
-            <div class="ac-chip"><strong id="paxLoad">67%</strong>Capacity</div>
-            <div class="ac-chip"><strong>B-14</strong>Bus No.</div>
+            <div class="ac-chip"><strong id="paxLoad">—</strong>Load</div>
+            <div class="ac-chip"><strong id="busCode">001</strong>Bus No.</div>
             <div class="ac-chip"><strong id="speedChip">36</strong>km/h</div>
-            <div class="ac-chip"><strong>22</strong>Seats left</div>
+            <div class="ac-chip"><strong>—</strong>Seats left</div>
           </div>
         </div>
 
@@ -885,12 +918,6 @@ body.dark-mode .route-select { background:#1F2937; border-color:#475569; color:#
       <!-- ===== MAP ===== -->
       <div class="sec" id="sec-mapview">
         <div style="height:100%;display:flex;flex-direction:column;">
-          <div class="map-search">
-            <div class="search-bar" style="margin:0;">
-              <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#94A3B8" stroke-width="1.5"></circle><path d="M11 11l3 3" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"></path></svg>
-              <div class="search-text">Search on map…</div>
-            </div>
-          </div>
           <div style="flex:1;position:relative;overflow:hidden;background:#D6E4F0;min-height:300px;">
             <svg hidden aria-hidden="true" width="100%" height="100%" viewBox="0 0 390 340" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;">
               <rect width="390" height="340" fill="#D6E4F0"></rect>
@@ -1006,7 +1033,7 @@ body.dark-mode .route-select { background:#1F2937; border-color:#475569; color:#
       </div><!-- /map -->
 
       <!-- ===== PROFILE ===== -->
-      <div class="sec active" id="sec-profile">
+      <div class="sec" id="sec-profile">
         <div class="profile-wrap">
 
           <div class="profile-card">
@@ -1087,7 +1114,7 @@ body.dark-mode .route-select { background:#1F2937; border-color:#475569; color:#
 
     <!-- Bottom nav -->
     <div class="bnav">
-      <button class="bn" id="bn-home" onclick="switchBn('home',this)">
+      <button class="bn active" id="bn-home" onclick="switchBn('home',this)">
         <div class="bn-ico">🏠</div>
         <div class="bn-lbl">NEAR ME</div>
         <div class="bn-bar"></div>
@@ -1102,7 +1129,7 @@ body.dark-mode .route-select { background:#1F2937; border-color:#475569; color:#
         <div class="bn-lbl">MAP</div>
         <div class="bn-bar"></div>
       </button>
-      <button class="bn active" id="bn-profile" onclick="switchBn('profile',this)">
+      <button class="bn" id="bn-profile" onclick="switchBn('profile',this)">
         <div class="bn-ico">👤</div>
         <div class="bn-lbl">PROFILE</div>
         <div class="bn-bar"></div>
@@ -1128,12 +1155,78 @@ body.dark-mode .route-select { background:#1F2937; border-color:#475569; color:#
 <script>
 document.querySelectorAll('#sec-mapview svg:not(.search-icon)').forEach(map => map.remove());
 
-// Clock
-function tick(){
-  const now=new Date(),p=n=>String(n).padStart(2,'0');
-  document.getElementById('sbarTime').textContent=`${p(now.getHours())}:${p(now.getMinutes())}`;
+const LIVE_CONFIG = { apiUrl: window.location.protocol === 'file:' ? `http://${window.location.hostname || 'localhost'}:8000` : window.location.origin, busId: 'bus-001', routeId: 'demo' };
+let liveSocket;
+let liveRetryTimer;
+let liveReceivedAt = 0;
+
+function applyLiveStatus(data){
+  if(!data || data.bus_id !== LIVE_CONFIG.busId) return;
+  liveReceivedAt = Date.now();
+  const hasLiveUpdate=!!data.last_update_ts && Date.now()-data.last_update_ts<=120000;
+  const routeTitle=document.querySelector('.ac-route');
+  if(routeTitle && data.route_name) routeTitle.textContent=data.route_name;
+  if(data.next_stop){
+    const minutes = data.next_stop.eta_minutes;
+    ['homeEta','eta42A','schedEta','mapEta'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.textContent=hasLiveUpdate?(id==='schedEta'||id==='mapEta'?`${minutes} min`:minutes):'—';
+    });
+    const toward=document.querySelector('.bc-toward');
+    if(toward) toward.textContent=`Next stop · ${data.next_stop.station_name}`;
+  }
+  const speed=document.getElementById('speedChip');
+  if(speed) speed.textContent=Math.round(data.current_speed_kmh || 0);
+  const status=document.getElementById('liveStatus');
+  if(status){
+    const stale=!data.last_update_ts || Date.now()-data.last_update_ts>120000;
+    status.textContent=data.sos_active?'SOS active':stale?'Waiting for bus update':`${data.delay_status || 'On time'}${data.delay_minutes ? ` · ${data.delay_minutes} min late` : ''} · Live`;
+    status.style.color=data.sos_active||data.delay_status==='Delayed'?'#DC2626':stale?'#64748B':'#16A34A';
+  }
+  const etaLabel=document.querySelector('.bc-eta-unit');
+  if(etaLabel) etaLabel.textContent=!data.last_update_ts||Date.now()-data.last_update_ts>120000?'waiting for bus':'live ETA';
+  const statusPill=document.querySelector('.bus-card.featured .status-pill');
+  if(statusPill){
+    const statusText=data.sos_active?'SOS ACTIVE':data.delay_status || 'On Time';
+    statusPill.className=`status-pill ${data.sos_active||data.delay_status==='Delayed'?'sp-delayed':data.delay_status==='Slight Delay'?'sp-slight':'sp-ontime'}`;
+    statusPill.textContent=statusText+(data.delay_minutes?` +${data.delay_minutes} min`:'');
+  }
 }
-tick(); setInterval(tick,1000);
+
+async function refreshLiveStatus(){
+  try{
+    const response=await fetch(`${LIVE_CONFIG.apiUrl}/public/live/${encodeURIComponent(LIVE_CONFIG.busId)}?route_id=${encodeURIComponent(LIVE_CONFIG.routeId)}`);
+    if(!response.ok) throw new Error(`HTTP ${response.status}`);
+    applyLiveStatus(await response.json());
+  }catch(error){
+    const status=document.getElementById('liveStatus');
+    if(status) status.textContent=liveReceivedAt?'Live feed disconnected · showing last update':'Live bus feed unavailable';
+  }
+}
+
+function connectLiveFeed(){
+  clearTimeout(liveRetryTimer);
+  const wsUrl=LIVE_CONFIG.apiUrl.replace(/^http/,'ws')+'/ws/live';
+  liveSocket=new WebSocket(wsUrl);
+  liveSocket.onmessage=event=>{
+    try{
+      const message=JSON.parse(event.data);
+      if(message.type==='live_status') applyLiveStatus(message.data);
+    }catch(error){ console.warn('Invalid live status update',error); }
+  };
+  liveSocket.onclose=()=>{ liveRetryTimer=setTimeout(connectLiveFeed,5000); };
+  liveSocket.onerror=()=>liveSocket.close();
+}
+
+['homeEta','eta42A','schedEta','mapEta'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.textContent='—';
+});
+const initialSpeed=document.getElementById('speedChip');
+if(initialSpeed) initialSpeed.textContent='—';
+refreshLiveStatus();
+connectLiveFeed();
+setInterval(refreshLiveStatus,15000);
 
 // Tab + bottom nav sync
 function switchTab(name,tabEl){
@@ -1160,35 +1253,6 @@ function switchBn(name,bnEl){
   document.querySelectorAll('.tab').forEach((t,i)=>{if(tabNames[i]===name)t.classList.add('active');});
   saveSession();
 }
-
-// ETA simulation
-let eta=3;
-function updateEtas(){
-  eta=Math.max(1,Math.min(12,eta+(Math.random()>0.6?-1:Math.random()>0.8?1:0)));
-  ['homeEta','eta42A'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.textContent=eta;
-  });
-  const se=document.getElementById('schedEta');
-  if(se) se.textContent=eta+' min';
-  const me=document.getElementById('mapEta');
-  if(me) me.textContent=eta+' min';
-  // Move bus marker on track
-  const pct=Math.max(55,Math.min(85, 72+(3-eta)*4));
-  const fill=document.getElementById('trackFill');
-  const marker=document.getElementById('busMarker');
-  if(fill) fill.style.width=pct+'%';
-  if(marker) marker.style.left=pct+'%';
-}
-setInterval(updateEtas,3500);
-
-// Speed simulation
-setInterval(()=>{
-  const el=document.getElementById('speedChip');
-  if(!el)return;
-  const cur=parseInt(el.textContent);
-  el.textContent=Math.max(0,Math.min(60,cur+Math.round((Math.random()-.5)*8)));
-},2800);
 
 // Toggle switch
 function toggleSwitch(el){el.classList.toggle('off');}
@@ -1229,7 +1293,6 @@ function restoreSession(){
     }
     if(saved.search && !['Enter both locations','Choose two different locations'].includes(saved.search)){
       document.getElementById('destinationLabel').textContent=saved.to || saved.search;
-      simulateBusArrival(saved.to || saved.search, saved.from || 'Starting point');
       showOsmRoute(saved.from || 'Current location', saved.to || saved.search);
     }
     const section=saved.activeSection;
@@ -1252,7 +1315,6 @@ function searchPlace(){
   }
   document.getElementById('destinationLabel').textContent=place;
   findCurrentLocation().then(origin => {
-    simulateBusArrival(place, origin.label);
     showOsmRoute(origin.value, place);
   });
   saveSession();
@@ -1303,7 +1365,6 @@ function planRoute(){
   }
   query.value=`${from} to ${to}`;
   document.getElementById('routePicker').classList.remove('open');
-  simulateBusArrival(to, from);
   showOsmRoute(from, to);
   saveSession();
   switchBn('mapview',document.getElementById('bn-mapview'));
@@ -1358,7 +1419,6 @@ async function showOsmRoutePath(origin,destination,requestId){
     fallbackPolyline=L.polyline(path,{color:'#1A3A6B',weight:5,opacity:.85}).addTo(osmMap);
     osmMap.fitBounds(fallbackPolyline.getBounds(),{padding:[30,30]});
     document.getElementById('osmMapStatus').classList.add('hidden');
-    animateBusOnRoute(path,destination);
   }catch(error){
     if(requestId !== routeRequestId) return;
     document.getElementById('osmMapStatus').textContent=error.message === 'Place not found' ? 'Could not find one of those places. Try adding the city name.' : 'Could not find a driving route. Please try again.';

@@ -1,9 +1,9 @@
 <html lang="en">
 
 <head>
-    <script type="text/javascript" src="/___vscode_livepreview_injected_script"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0e0e1a">
     <title>DriveOps — Driver App</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
@@ -907,23 +907,36 @@
                 top: 7px
             }
         }
+
+        @media(min-width:700px) {
+            body { min-height:100dvh; padding:20px; }
+            .phone { width:min(480px,100%); height:min(940px,calc(100dvh - 40px)); border-radius:32px; transform:none; }
+            .screen { border-radius:26px; }
+        }
+        @media(max-width:699px) {
+            body { min-height:100dvh; align-items:flex-start; }
+            .phone { width:100vw; height:100dvh; min-height:560px; border-radius:0; box-shadow:none; transform:none; }
+            .screen { border-radius:0; }
+        }
+        /* Real web app layout, without a simulated handset or system status bar. */
+        body { display:block; min-height:100dvh; padding:0; }
+        .phone { width:100%; max-width:none; height:100dvh; min-height:560px; margin:0; border-radius:0; box-shadow:none; transform:none; }
+        .screen { border-radius:0; }
+        .status { display:none; }
+        .header { padding:18px clamp(18px,4vw,56px); }
+        .main { width:min(1180px,100%); margin:0 auto; }
+        .section.active { min-height:100%; }
+        .bottom { padding:10px 0; }
+        @media(max-width:699px) {
+            .header { padding:14px 16px; }
+            .main { width:100%; }
+        }
     </style>
 </head>
 
 <body>
     <div class="phone">
-        <div>
-
-        </div>
         <div class="screen">
-            <div class="status">
-                <div></div>
-                <div>
-                    <div></div>
-                    <div></div>
-                </div>
-            </div>
-
             <div class="header">
                 <div class="driver">
                     <div class="driver-info">
@@ -1209,7 +1222,9 @@
         // CONFIGURATION
         // ============================================
         const CONFIG = {
-            API_URL: 'http://localhost:8000', // Change to your backend URL
+            API_URL: window.location.protocol === 'file:'
+                ? `http://${window.location.hostname || 'localhost'}:8000`
+                : window.location.origin,
             DEVICE_KEY: 'your-secret-device-key-here', // Must match backend DEVICE_API_KEY
             BUS_ID: 'bus-001',
             ROUTE_ID: 'demo',

@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
+const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const { getAllRoutes, getRoute } = require('./route');
@@ -14,6 +15,24 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 const app = express();
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
+
+app.get('/', (req, res) => {
+    res.type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#102b4e"><title>CityBus · Live transit</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#eaf2fb,#f8fafc);font:16px system-ui,sans-serif;color:#132b4a}.wrap{width:min(760px,100%)}.eyebrow{color:#3771ad;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}.title{font-size:clamp(36px,8vw,64px);line-height:1;margin:14px 0}.sub{color:#58708e;max-width:520px;line-height:1.6}.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:32px}.card{display:block;text-decoration:none;color:inherit;background:white;border:1px solid #dce6f1;border-radius:22px;padding:24px;box-shadow:0 14px 35px #19385b12;transition:transform .2s,box-shadow .2s}.card:hover{transform:translateY(-3px);box-shadow:0 20px 45px #19385b20}.icon{font-size:28px}.card h2{margin:16px 0 6px}.card p{color:#647b95;line-height:1.5;margin:0}.arrow{display:block;margin-top:22px;color:#1664ae;font-weight:700}</style></head><body><main class="wrap"><div class="eyebrow">CityBus · Live transit</div><h1 class="title">Your city,<br>in motion.</h1><p class="sub">Live bus tracking for passengers and a trip console for drivers. Choose an app to continue.</p><div class="apps"><a class="card" href="/customer"><div class="icon">🗺️</div><h2>Passenger app</h2><p>Plan a route, view bus arrivals, and follow service updates.</p><span class="arrow">Open passenger app →</span></a><a class="card" href="/driver"><div class="icon">🚌</div><h2>Driver app</h2><p>Share bus location, update stop progress, and send reports.</p><span class="arrow">Open driver app →</span></a></div></main></body></html>`);
+});
+app.get('/customer', (req, res) => res.sendFile(path.join(__dirname, '..', 'customer screen', 'index.html')));
+app.get('/driver', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
+// Read-only passenger endpoints; write operations remain device-key protected.
+app.get('/public/routes', (req, res) => {
+    res.json(getAllRoutes());
+});
+app.get('/public/live/:busId', (req, res) => {
+    const routeId = req.query.route_id || 'demo';
+    if (!getRoute(routeId)) {
+        return res.status(404).json({ detail: `Unknown route_id: ${routeId}` });
+    }
+    res.json(defaultLiveStatus(req.params.busId, routeId));
+});
 
 // ------------------------------------------------------------------
 // Auth: every request must carry X-Device-Key matching DEVICE_API_KEY,
