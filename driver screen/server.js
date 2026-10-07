@@ -6,7 +6,8 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const { getAllRoutes, getRoute } = require('./route');
-const { applyTelemetry, defaultLiveStatus, setSos } = require('./store');
+const { applyTelemetry, defaultLiveStatus, listLiveStatuses, setSos } = require('./store');
+const { distanceKm, etaMinutes } = require('./geo');
 
 const PORT = process.env.PORT || 8000;
 const DEVICE_API_KEY = process.env.DEVICE_API_KEY || 'your-secret-device-key-here';
@@ -32,6 +33,40 @@ app.get('/public/live/:busId', (req, res) => {
         return res.status(404).json({ detail: `Unknown route_id: ${routeId}` });
     }
     res.json(defaultLiveStatus(req.params.busId, routeId));
+});
+app.get('/public/buses/nearby', (req, res) => {
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+    const radiusKm = req.query.radius_km === undefined ? 5 : Number(req.query.radius_km);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90 ||
+        !Number.isFinite(lng) || lng < -180 || lng > 180 ||
+        !Number.isFinite(radiusKm) || radiusKm <= 0 || radiusKm > 25) {
+        return res.status(400).json({ detail: 'Valid lat/lng and radius_km (0–25) are required' });
+    }
+
+    const now = Date.now();
+    const nearby = listLiveStatuses()
+        .filter((bus) => now - bus.last_update_ts <= 120000)
+        .map((bus) => {
+            const distance = distanceKm(lat, lng, bus.lat, bus.lng);
+            const roadDistance = distance * 1.35;
+            return {
+                bus_id: bus.bus_id,
+                route_id: bus.route_id,
+                route_name: bus.route_name,
+                distance_km: Number(distance.toFixed(1)),
+                eta_minutes: distance < 0.05 ? 1 : etaMinutes(roadDistance, bus.current_speed_kmh, 20),
+                current_speed_kmh: bus.current_speed_kmh,
+                delay_status: bus.delay_status,
+                delay_minutes: bus.delay_minutes,
+                sos_active: bus.sos_active,
+                last_updated: new Date(bus.last_update_ts).toISOString(),
+            };
+        })
+        .filter((bus) => bus.distance_km <= radiusKm)
+        .sort((a, b) => a.eta_minutes - b.eta_minutes);
+
+    res.json({ radius_km: radiusKm, buses: nearby });
 });
 
 // ------------------------------------------------------------------

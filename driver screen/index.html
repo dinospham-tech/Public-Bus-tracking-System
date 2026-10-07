@@ -1237,8 +1237,8 @@
         let state = {
             busId: CONFIG.BUS_ID,
             routeId: CONFIG.ROUTE_ID,
-            currentLat: 12.9716,
-            currentLng: 77.5946,
+            currentLat: 22.559973,
+            currentLng: 88.490081,
             currentSpeed: 0,
             nextStop: null,
             allStops: [],
@@ -1366,6 +1366,9 @@
         // ============================================
         function updateUI(data) {
             if (!data) return;
+
+            if (Number.isFinite(data.lat)) state.currentLat = data.lat;
+            if (Number.isFinite(data.lng)) state.currentLng = data.lng;
 
             // Update next stop
             if (data.next_stop) {

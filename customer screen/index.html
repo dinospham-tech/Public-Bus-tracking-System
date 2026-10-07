@@ -579,12 +579,31 @@ body { display:block; min-height:100dvh; padding:0; background:#F2F6FC; }
 .screen { border-radius:0; }
 .sbar,.island,.pb,.notif-btn { display:none !important; }
 .header { display:flex; flex-wrap:wrap; align-items:center; gap:12px 28px; padding:18px clamp(18px,4vw,56px); }
+body.profile-active .header { display:none; }
 .header-top { margin:0; }
 .header > .search-bar { flex:1; min-width:min(320px,100%); max-width:680px; }
 .route-picker { flex-basis:100%; max-width:680px; margin:0 0 0 auto; }
 .tabs { padding:0 clamp(18px,4vw,56px); }
 .main { width:min(1180px,100%); margin:0 auto; }
 .bnav { display:none; }
+.schedule-wrap > .day-tabs,.schedule-wrap > .schedule-route-head,.schedule-wrap > .timeline { display:none; }
+.nearby-board { margin:22px 16px; padding:24px; background:#fff; border:1px solid #E2E8F4; border-radius:22px; box-shadow:0 8px 26px #1A3A6B0A; }
+.nearby-board-head { display:flex; justify-content:space-between; align-items:center; gap:18px; }
+.nearby-board h2 { color:#1A3A6B; font-size:22px; }
+.nearby-board-head p { color:#64748B; font-size:13px; margin-top:5px; }
+.nearby-refresh { border:0; border-radius:11px; padding:11px 16px; background:#1A3A6B; color:white; font:700 13px 'Plus Jakarta Sans',sans-serif; cursor:pointer; white-space:nowrap; }
+.nearby-refresh:disabled { opacity:.55; cursor:wait; }
+.nearby-bus-list { display:grid; gap:12px; margin-top:20px; }
+.nearby-bus-card { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; border:1px solid #E2E8F4; border-radius:16px; padding:16px; }
+.nearby-bus-name { color:#1A3A6B; font-weight:800; font-size:15px; }
+.nearby-bus-meta { color:#64748B; font-size:12px; margin-top:5px; }
+.nearby-bus-eta { color:#FF6B2B; font:800 22px 'JetBrains Mono',monospace; text-align:right; }
+.nearby-bus-eta small { display:block; color:#64748B; font:600 10px 'Plus Jakarta Sans',sans-serif; margin-top:3px; }
+.nearby-note { color:#64748B; font-size:11px; line-height:1.5; margin-top:16px; }
+body.dark-mode .nearby-board { background:#1F2937; border-color:#374151; }
+body.dark-mode .nearby-board h2,.dark-mode .nearby-bus-name { color:#F8FAFC; }
+body.dark-mode .nearby-bus-card { border-color:#374151; }
+body.dark-mode .nearby-board-head p,.dark-mode .nearby-bus-meta,.dark-mode .nearby-note,.dark-mode .nearby-bus-eta small { color:#94A3B8; }
 @media (max-width: 699px) {
   .header { gap:10px; padding:14px 16px; }
   .header > .search-bar { min-width:0; max-width:none; }
@@ -592,6 +611,8 @@ body { display:block; min-height:100dvh; padding:0; background:#F2F6FC; }
   .tabs { display:none; }
   .main { width:100%; }
   .bnav { display:flex; padding-bottom:max(10px,env(safe-area-inset-bottom)); }
+  .nearby-board { margin:14px 12px; padding:18px; }
+  .nearby-board-head { align-items:flex-start; }
 }
 </style>
 </head>
@@ -638,20 +659,7 @@ body { display:block; min-height:100dvh; padding:0; background:#F2F6FC; }
       </div>
       <div class="search-bar">
         <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#94A3B8" stroke-width="1.5"></circle><path d="M11 11l3 3" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"></path></svg>
-        <input class="search-text" id="searchQuery" placeholder="Search stop, route or area..." onkeydown="handleSearchKey(event)" aria-label="Search stop, route, or destination">
-        <button class="search-filter" onclick="showRoutePicker()">Plan route</button>
-      </div>
-      <div class="route-picker" id="routePicker">
-        <input class="route-select" id="routeFrom" list="locationSuggestions" value="UEM Kolkata" placeholder="Starting point" aria-label="Starting point">
-        <span class="route-arrow">to</span>
-        <input class="route-select" id="routeTo" list="locationSuggestions" value="Biswa Bangla Gate" placeholder="Destination" aria-label="Destination">
-        <datalist id="locationSuggestions">
-          <option value="UEM Kolkata"></option>
-          <option value="Biswa Bangla Gate"></option>
-          <option value="New Town, Kolkata"></option>
-          <option value="Howrah Station, Kolkata"></option>
-        </datalist>
-        <button class="route-submit" onclick="planRoute()">Show</button>
+        <input class="search-text" id="searchQuery" placeholder="Search a destination or plan a route..." onkeydown="handleSearchKey(event)" aria-label="Search a destination or plan a route">
       </div>
     </div>
 
@@ -838,83 +846,19 @@ body { display:block; min-height:100dvh; padding:0; background:#F2F6FC; }
       <!-- ===== SCHEDULE ===== -->
       <div class="sec" id="sec-schedule">
         <div class="schedule-wrap">
-
-          <div class="day-tabs">
-            <div class="day-chip active">Today</div>
-            <div class="day-chip" onclick="selectDay(this)">Thu</div>
-            <div class="day-chip" onclick="selectDay(this)">Fri</div>
-            <div class="day-chip" onclick="selectDay(this)">Sat</div>
-            <div class="day-chip" onclick="selectDay(this)">Sun</div>
-          </div>
-
-          <div class="schedule-route-head">
-            <div class="srh-badge">42A</div>
-            <div>
-              <div class="srh-name">City Express</div>
-              <div class="srh-stops">Central Stn → Airport · 7 stops</div>
-            </div>
-            <div class="srh-freq">
-              <div class="srh-freq-val">12 min</div>
-              <div class="srh-freq-label">frequency</div>
-            </div>
-          </div>
-
-          <div class="timeline">
-            <div class="tl-item">
-              <div class="tl-spine"><div class="tl-circ past"></div><div class="tl-line"></div></div>
-              <div class="tl-card past-card">
-                <div class="tl-row"><div class="tl-stop">Central Station</div><div class="tl-time">08:00</div></div>
-                <div class="tl-sub">Departed · 22 boarded</div>
+          <div class="nearby-board">
+            <div class="nearby-board-head">
+              <div>
+                <h2>Buses nearby</h2>
+                <p id="nearbyLocationStatus" role="status">Use your location to see buses within 5 km.</p>
               </div>
+              <button class="nearby-refresh" id="nearbyRefresh" onclick="loadNearbyBuses()">Find buses</button>
             </div>
-            <div class="tl-item">
-              <div class="tl-spine"><div class="tl-circ past"></div><div class="tl-line"></div></div>
-              <div class="tl-card past-card">
-                <div class="tl-row"><div class="tl-stop">Market Street</div><div class="tl-time">08:14</div></div>
-                <div class="tl-sub">Departed · 11 boarded, 3 alighted</div>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-spine"><div class="tl-circ past"></div><div class="tl-line"></div></div>
-              <div class="tl-card past-card">
-                <div class="tl-row"><div class="tl-stop">Old Town Square</div><div class="tl-time">08:27</div></div>
-                <div class="tl-sub">Departed · 14 boarded, 8 alighted</div>
-              </div>
-            </div>
-            <!-- NOW -->
-            <div class="tl-item">
-              <div class="tl-spine"><div class="tl-circ now"></div><div class="tl-line"></div></div>
-              <div class="tl-card now-card">
-                <div class="tl-row"><div class="tl-stop" style="color:#1A3A6B;font-weight:800;">University Avenue</div><div class="tl-time">08:42</div></div>
-                <div class="tl-sub">Your stop · ETA <span style="color:#FF6B2B;font-weight:700;" id="schedEta">1 min</span></div>
-                <div class="tl-now-badge">▶ Next arrival</div>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-spine"><div class="tl-circ future"></div><div class="tl-line"></div></div>
-              <div class="tl-card">
-                <div class="tl-row"><div class="tl-stop">Tech Park</div><div class="tl-time">08:57</div></div>
-                <div class="tl-sub">15 boarding expected</div>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-spine"><div class="tl-circ future"></div><div class="tl-line"></div></div>
-              <div class="tl-card">
-                <div class="tl-row"><div class="tl-stop">City Mall</div><div class="tl-time">09:12</div></div>
-                <div class="tl-sub">High demand stop</div>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-spine"><div class="tl-circ future"></div></div>
-              <div class="tl-card">
-                <div class="tl-row"><div class="tl-stop">✈ Airport Terminal</div><div class="tl-time">09:30</div></div>
-                <div class="tl-sub">End of route · All passengers alight</div>
-              </div>
-            </div>
+            <div class="nearby-bus-list" id="nearbyBusList"></div>
+            <p class="nearby-note">Arrival times are estimates from the bus’s latest GPS position and speed. Only buses currently sharing location with CityBus appear here.</p>
           </div>
         </div>
       </div><!-- /schedule -->
-
       <!-- ===== MAP ===== -->
       <div class="sec" id="sec-mapview">
         <div style="height:100%;display:flex;flex-direction:column;">
@@ -1228,8 +1172,80 @@ refreshLiveStatus();
 connectLiveFeed();
 setInterval(refreshLiveStatus,15000);
 
+let nearbyPosition = null;
+let nearbyBusy = false;
+
+async function refreshNearbyBuses(showLoading=true){
+  if(!nearbyPosition || nearbyBusy) return;
+  const status=document.getElementById('nearbyLocationStatus');
+  const button=document.getElementById('nearbyRefresh');
+  const list=document.getElementById('nearbyBusList');
+  nearbyBusy=true;
+  button.disabled=true;
+  if(showLoading) status.textContent='Checking buses within 5 km…';
+  try{
+    const params=new URLSearchParams({lat:nearbyPosition.lat,lng:nearbyPosition.lng,radius_km:'5'});
+    const response=await fetch(`${LIVE_CONFIG.apiUrl}/public/buses/nearby?${params}`);
+    if(!response.ok) throw new Error(`Bus feed returned ${response.status}`);
+    const data=await response.json();
+    list.replaceChildren();
+    if(!data.buses.length){
+      status.textContent='No buses with a recent GPS update are within 5 km.';
+      return;
+    }
+    status.textContent=`${data.buses.length} ${data.buses.length===1?'bus':'buses'} found within 5 km of your location.`;
+    data.buses.forEach(bus=>{
+      const card=document.createElement('article');
+      card.className='nearby-bus-card';
+      const details=document.createElement('div');
+      const name=document.createElement('div');
+      name.className='nearby-bus-name';
+      name.textContent=`${bus.route_name} · ${bus.bus_id}`;
+      const meta=document.createElement('div');
+      meta.className='nearby-bus-meta';
+      const delay=bus.delay_minutes?` · ${bus.delay_status} +${bus.delay_minutes} min`:'';
+      meta.textContent=`${bus.distance_km} km away · ${bus.current_speed_kmh} km/h${delay}${bus.sos_active?' · SOS active':''}`;
+      details.append(name,meta);
+      const eta=document.createElement('div');
+      eta.className='nearby-bus-eta';
+      eta.textContent=`${bus.eta_minutes} min`;
+      const etaLabel=document.createElement('small');
+      etaLabel.textContent='approx. to you';
+      eta.append(etaLabel);
+      card.append(details,eta);
+      list.append(card);
+    });
+  }catch(error){
+    status.textContent='Could not load nearby buses. Check your connection and try again.';
+    console.warn('Nearby bus lookup failed:',error);
+  }finally{
+    nearbyBusy=false;
+    button.disabled=false;
+  }
+}
+
+function loadNearbyBuses(){
+  const status=document.getElementById('nearbyLocationStatus');
+  if(!navigator.geolocation){
+    status.textContent='Location is not available in this browser.';
+    return;
+  }
+  status.textContent='Getting your location…';
+  navigator.geolocation.getCurrentPosition(position=>{
+    nearbyPosition={lat:position.coords.latitude,lng:position.coords.longitude};
+    refreshNearbyBuses();
+  },error=>{
+    status.textContent=error.code===error.PERMISSION_DENIED?'Allow location access to find buses near you.':'Could not get your location. Try again.';
+  },{enableHighAccuracy:false,timeout:12000,maximumAge:60000});
+}
+
+setInterval(()=>{
+  if(nearbyPosition && document.getElementById('sec-schedule').classList.contains('active')) refreshNearbyBuses(false);
+},15000);
+
 // Tab + bottom nav sync
 function switchTab(name,tabEl){
+  document.body.classList.toggle('profile-active', name==='profile');
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -1238,14 +1254,17 @@ function switchTab(name,tabEl){
   document.querySelectorAll('.bn').forEach(b=>b.classList.remove('active'));
   const bn=document.getElementById('bn-'+name);
   if(bn) bn.classList.add('active');
+  if(name==='schedule' && !nearbyPosition) loadNearbyBuses();
   if(name === 'mapview' && osmMap) setTimeout(()=>osmMap.invalidateSize(),80);
   saveSession();
 }
 function switchBn(name,bnEl){
+  document.body.classList.toggle('profile-active', name==='profile');
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
   document.querySelectorAll('.bn').forEach(b=>b.classList.remove('active'));
   bnEl.classList.add('active');
+  if(name==='schedule' && !nearbyPosition) loadNearbyBuses();
   if(name === 'mapview' && osmMap) setTimeout(()=>osmMap.invalidateSize(),80);
   // sync top tabs
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -1267,8 +1286,6 @@ function saveSession(){
   try{
     localStorage.setItem('citybus-session', JSON.stringify({
       search: document.getElementById('searchQuery').value,
-      from: document.getElementById('routeFrom').value,
-      to: document.getElementById('routeTo').value,
       darkMode: document.body.classList.contains('dark-mode'),
       activeSection: document.querySelector('.sec.active')?.id.replace('sec-','') || 'profile'
     }));
@@ -1282,18 +1299,14 @@ function restoreSession(){
     const saved=JSON.parse(localStorage.getItem('citybus-session') || 'null');
     if(!saved) return;
     const query=document.getElementById('searchQuery');
-    const from=document.getElementById('routeFrom');
-    const to=document.getElementById('routeTo');
     if(saved.search) query.value=saved.search;
-    if(saved.from) from.value=saved.from;
-    if(saved.to) to.value=saved.to;
     if(saved.darkMode){
       document.body.classList.add('dark-mode');
       document.querySelectorAll('.toggle')[2]?.classList.remove('off');
     }
-    if(saved.search && !['Enter both locations','Choose two different locations'].includes(saved.search)){
-      document.getElementById('destinationLabel').textContent=saved.to || saved.search;
-      showOsmRoute(saved.from || 'Current location', saved.to || saved.search);
+    if(saved.search){
+      document.getElementById('destinationLabel').textContent=saved.search;
+      showOsmRoute('Current location', saved.search);
     }
     const section=saved.activeSection;
     if(section && document.getElementById('bn-'+section)) switchBn(section,document.getElementById('bn-'+section));
@@ -1333,41 +1346,6 @@ function findCurrentLocation(){
       {timeout:8000,maximumAge:60000}
     );
   });
-}
-
-function showRoutePicker(){
-  document.getElementById('routePicker').classList.add('open');
-  const place=document.getElementById('searchQuery').value.trim();
-  const routeParts=place.split(/\s+to\s+/i);
-  if(routeParts.length === 2){
-    document.getElementById('routeFrom').value=routeParts[0].trim();
-    document.getElementById('routeTo').value=routeParts[1].trim();
-  }else if(routeParts.length > 2){
-    document.getElementById('routeFrom').value=routeParts[0].trim();
-    document.getElementById('routeTo').value=routeParts[routeParts.length - 1].trim();
-  }else if(place && !['Enter both locations','Choose two different locations'].includes(place)){
-    document.getElementById('routeTo').value=place;
-  }
-  document.getElementById('routeFrom').focus();
-}
-
-function planRoute(){
-  const from=document.getElementById('routeFrom').value;
-  const to=document.getElementById('routeTo').value;
-  const query=document.getElementById('searchQuery');
-  if(!from.trim() || !to.trim()){
-    query.value='Enter both locations';
-    return;
-  }
-  if(from.trim().toLowerCase() === to.trim().toLowerCase()){
-    query.value='Choose two different locations';
-    return;
-  }
-  query.value=`${from} to ${to}`;
-  document.getElementById('routePicker').classList.remove('open');
-  showOsmRoute(from, to);
-  saveSession();
-  switchBn('mapview',document.getElementById('bn-mapview'));
 }
 
 let osmMap;

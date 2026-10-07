@@ -4,7 +4,7 @@ const { getRoute } = require('./route');
 // bus_id -> live state. Swap for Redis/DB if you need multi-process/persistence.
 const buses = new Map();
 
-const STOP_REACHED_THRESHOLD_KM = 0.25; // ~250m counts as "arrived"
+const STOP_REACHED_THRESHOLD_KM = 0.1; // ~100m counts as "arrived"
 
 function getOrCreateBus(busId, routeId) {
     if (!buses.has(busId)) {
@@ -25,6 +25,16 @@ function getOrCreateBus(busId, routeId) {
 
 function getBus(busId) {
     return buses.get(busId) || null;
+}
+
+function listLiveStatuses() {
+    return Array.from(buses.values())
+        .filter((bus) => bus.last_update_ts && bus.lat != null && bus.lng != null)
+        .map((bus) => {
+            const route = getRoute(bus.route_id);
+            return route ? buildLiveStatus(bus, route) : null;
+        })
+        .filter(Boolean);
 }
 
 /**
@@ -157,4 +167,4 @@ function defaultLiveStatus(busId, routeId) {
     return buildLiveStatus(bus, route);
 }
 
-module.exports = { applyTelemetry, getBus, setSos, defaultLiveStatus, buses };
+module.exports = { applyTelemetry, getBus, listLiveStatuses, setSos, defaultLiveStatus, buses };

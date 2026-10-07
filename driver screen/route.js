@@ -1,14 +1,13 @@
 const routes = {
     demo: {
         route_id: 'demo',
-        route_name: 'Route 42A',
+        route_name: 'Route 42A · New Town',
         stations: [
-            { station_id: 'ST01', station_name: 'MG Road Junction', lat: 12.9716, lng: 77.5946, scheduled_offset_min: 0 },
-            { station_id: 'ST02', station_name: 'Trinity Circle', lat: 12.9738, lng: 77.6069, scheduled_offset_min: 8 },
-            { station_id: 'ST03', station_name: 'Ulsoor Lake Gate', lat: 12.9815, lng: 77.6205, scheduled_offset_min: 16 },
-            { station_id: 'ST04', station_name: 'Indiranagar 100ft Rd', lat: 12.9719, lng: 77.6412, scheduled_offset_min: 26 },
-            { station_id: 'ST05', station_name: 'Domlur Flyover', lat: 12.9611, lng: 77.6387, scheduled_offset_min: 34 },
-            { station_id: 'ST06', station_name: 'Marathahalli Bridge', lat: 12.9569, lng: 77.7011, scheduled_offset_min: 48 },
+            { station_id: 'ST01', station_name: 'UEM Kolkata', lat: 22.559973, lng: 88.490081, scheduled_offset_min: 0 },
+            { station_id: 'ST02', station_name: 'Biswa Bangla Gate', lat: 22.56184, lng: 88.488748, scheduled_offset_min: 2 },
+            { station_id: 'ST03', station_name: 'Eco Park Gate 1', lat: 22.59889, lng: 88.46694, scheduled_offset_min: 12 },
+            { station_id: 'ST04', station_name: 'Chinar Park', lat: 22.6244, lng: 88.4388, scheduled_offset_min: 25 },
+            { station_id: 'ST05', station_name: 'Kolkata Airport', lat: 22.65396, lng: 88.44672, scheduled_offset_min: 35 },
         ],
     },
 };
