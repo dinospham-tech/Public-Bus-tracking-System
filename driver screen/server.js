@@ -6,7 +6,7 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const { getAllRoutes, getRoute } = require('./route');
-const { applyTelemetry, defaultLiveStatus, listLiveStatuses, setSos } = require('./store');
+const { applyTelemetry, defaultLiveStatus, listLiveStatuses, setSos, getBus } = require('./store');
 const { distanceKm, etaMinutes } = require('./geo');
 
 const PORT = process.env.PORT || 8000;
@@ -54,7 +54,7 @@ app.get('/public/buses/nearby', (req, res) => {
                 bus_id: bus.bus_id,
                 route_id: bus.route_id,
                 route_name: bus.route_name,
-                distance_km: Number(distance.toFixed(1)),
+                distance_km: distance,
                 eta_minutes: distance < 0.05 ? 1 : etaMinutes(roadDistance, bus.current_speed_kmh, 20),
                 current_speed_kmh: bus.current_speed_kmh,
                 delay_status: bus.delay_status,
@@ -66,7 +66,10 @@ app.get('/public/buses/nearby', (req, res) => {
         .filter((bus) => bus.distance_km <= radiusKm)
         .sort((a, b) => a.eta_minutes - b.eta_minutes);
 
-    res.json({ radius_km: radiusKm, buses: nearby });
+    res.json({
+        radius_km: radiusKm,
+        buses: nearby.map((bus) => ({ ...bus, distance_km: Number(bus.distance_km.toFixed(1)) })),
+    });
 });
 
 // ------------------------------------------------------------------
@@ -123,6 +126,14 @@ app.post('/telemetry', (req, res) => {
     }
     if (action !== undefined && !['update', 'reached', 'skipped', 'emergency'].includes(action)) {
         return res.status(400).json({ detail: 'action must be update, reached, skipped, or emergency' });
+    }
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (Math.abs(nowSeconds - timestamp) > 120) {
+        return res.status(400).json({ detail: 'timestamp must be within 120 seconds of server time' });
+    }
+    const previousBus = getBus(bus_id);
+    if (previousBus && timestamp <= Math.floor(previousBus.last_update_ts / 1000)) {
+        return res.status(409).json({ detail: 'timestamp must be newer than the previous update' });
     }
     if (!getRoute(route_id || 'demo')) {
         return res.status(404).json({ detail: `Unknown route_id: ${route_id}` });
@@ -208,7 +219,7 @@ function broadcastLiveStatus(liveStatus) {
     });
 }
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚌 Bus tracker backend listening on http://localhost:${PORT}`);
     console.log(`📡 WebSocket live feed at ws://localhost:${PORT}/ws/live`);
     console.log(`🔑 Device key required: ${DEVICE_API_KEY === 'your-secret-device-key-here' ? '(default — change in .env!)' : 'set from .env'}`);

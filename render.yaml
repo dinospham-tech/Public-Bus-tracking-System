@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: genesis-citybus
+    runtime: node
+    plan: free
+    rootDir: driver screen
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production

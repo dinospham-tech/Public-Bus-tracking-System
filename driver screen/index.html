@@ -1247,6 +1247,7 @@
             sosActive: false,
             dutyActive: true,
             wsConnection: null,
+            wsPingTimer: null,
         };
 
         // ============================================
@@ -1535,13 +1536,6 @@
                     setTimeout(connectWebSocket, 5000);
                 };
 
-                // Ping to keep connection alive
-                setInterval(() => {
-                    if (state.wsConnection && state.wsConnection.readyState === WebSocket.OPEN) {
-                        state.wsConnection.send('ping');
-                    }
-                }, 30000);
-
             } catch (e) {
                 console.error('WebSocket connection failed:', e);
                 setTimeout(connectWebSocket, 5000);
@@ -1690,6 +1684,11 @@
 
             // Connect WebSocket for real-time updates
             connectWebSocket();
+            state.wsPingTimer = setInterval(() => {
+                if (state.wsConnection && state.wsConnection.readyState === WebSocket.OPEN) {
+                    state.wsConnection.send('ping');
+                }
+            }, 30000);
 
             toast('🚀 DriveOps connected');
         }
@@ -1711,7 +1710,6 @@
 
         console.log('🚌 DriveOps Driver App');
         console.log('📡 Connected to:', CONFIG.API_URL);
-        console.log('🔑 Device Key:', CONFIG.DEVICE_KEY);
         console.log('🚍 Bus ID:', CONFIG.BUS_ID);
         console.log('🛤️ Route ID:', CONFIG.ROUTE_ID);
     </script>

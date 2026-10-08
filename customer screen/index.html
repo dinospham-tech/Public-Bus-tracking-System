@@ -381,6 +381,12 @@ body {
 .osm-map { width:100%; height:100%; min-height:300px; display:block; transition:filter 0.2s ease; z-index:0; }
 .osm-map-status { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px; background:#E8F0F8; color:#64748B; font:600 12px 'Plus Jakarta Sans',sans-serif; text-align:center; z-index:1; pointer-events:none; }
 .osm-map-status.hidden { display:none; }
+.live-map-controls { position:absolute; top:14px; right:14px; z-index:1000; display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+.live-map-badge { display:flex; align-items:center; gap:7px; padding:9px 12px; border:1px solid #E2E8F4; border-radius:999px; background:#fff; color:#334155; box-shadow:0 4px 14px #1A3A6B20; font:700 10px 'JetBrains Mono',monospace; letter-spacing:.3px; }
+.live-map-dot { width:8px; height:8px; border-radius:50%; background:#94A3B8; }
+.live-map-badge.is-live .live-map-dot { background:#00B87A; box-shadow:0 0 0 4px #00B87A22; }
+.live-map-center { display:flex; align-items:center; gap:7px; padding:10px 13px; border:0; border-radius:12px; background:#1A3A6B; color:#fff; box-shadow:0 4px 14px #1A3A6B33; font:700 11px 'Plus Jakarta Sans',sans-serif; cursor:pointer; }
+.live-map-center:disabled { background:#94A3B8; cursor:not-allowed; box-shadow:none; }
 .bus-simulation { position:absolute; inset:0; z-index:2; pointer-events:none; display:none; }
 .bus-simulation.active { display:block; }
 .bus-marker { display:none; }
@@ -516,6 +522,7 @@ body.dark-mode .stat-p,
 body.dark-mode .map-panel { background:#1F2937; }
 
 body.dark-mode .osm-map-status { background:#172033; color:#CBD5E1; }
+body.dark-mode .live-map-badge { background:#1F2937; border-color:#334155; color:#E2E8F0; }
 body.dark-mode .destination-label { background:#1F2937; color:#F8FAFC; }
 body.dark-mode .origin-label { background:#1F2937; color:#F8FAFC; }
 body.dark-mode .header,
@@ -941,6 +948,10 @@ body.dark-mode .nearby-board-head p,.dark-mode .nearby-bus-meta,.dark-mode .near
             </svg>
             <div class="osm-map" id="osmMap" role="application" aria-label="OpenStreetMap showing the selected bus route"></div>
             <div class="osm-map-status" id="osmMapStatus">Loading OpenStreetMap...</div>
+            <div class="live-map-controls" aria-label="Live bus map controls">
+              <div class="live-map-badge" id="mapLiveBadge" role="status" aria-live="polite"><span class="live-map-dot"></span><span id="mapLiveText">Waiting for bus</span></div>
+              <button class="live-map-center" id="centerBusButton" type="button" onclick="centerOnLiveBus()" disabled>⌖ <span>Center bus</span></button>
+            </div>
             <div class="bus-simulation" id="busSimulation" aria-live="polite">
               <div class="bus-marker" id="busMarkerSimulation">
                 <div class="bus-pulse-map"></div>
@@ -1103,10 +1114,50 @@ const LIVE_CONFIG = { apiUrl: window.location.protocol === 'file:' ? `http://${w
 let liveSocket;
 let liveRetryTimer;
 let liveReceivedAt = 0;
+let latestBusPosition = null;
+let liveBusMarker;
+let centeredOnLiveBus = false;
+
+function updateLiveBusMarker(data){
+  const fresh=!!data?.last_update_ts && Date.now()-data.last_update_ts<=120000;
+  const hasCoordinates=Number.isFinite(data?.lat) && Number.isFinite(data?.lng);
+  const badge=document.getElementById('mapLiveBadge');
+  const badgeText=document.getElementById('mapLiveText');
+  const centerButton=document.getElementById('centerBusButton');
+  if(badge){
+    badge.classList.toggle('is-live',fresh && hasCoordinates);
+    badgeText.textContent=fresh && hasCoordinates?`LIVE · ${data.bus_id}`:'Location stale';
+  }
+  if(centerButton) centerButton.disabled=!(fresh && hasCoordinates && osmMap);
+  if(!osmMap) return;
+  if(!fresh || !hasCoordinates){
+    if(liveBusMarker){osmMap.removeLayer(liveBusMarker);liveBusMarker=null;}
+    return;
+  }
+  const position=[data.lat,data.lng];
+  if(!liveBusMarker){
+    liveBusMarker=L.circleMarker(position,{radius:9,color:'#fff',weight:3,fillColor:'#FF6B2B',fillOpacity:1})
+      .addTo(osmMap)
+      .bindTooltip(`🚌 ${data.bus_id} · Live location`,{permanent:true,direction:'top',className:'bus-map-tooltip'});
+    if(!centeredOnLiveBus){osmMap.setView(position,15);centeredOnLiveBus=true;}
+  }else{
+    liveBusMarker.setLatLng(position);
+    liveBusMarker.setTooltipContent(`🚌 ${data.bus_id} · Live location`);
+  }
+}
+
+function centerOnLiveBus(){
+  if(!osmMap || !liveBusMarker || !latestBusPosition) return;
+  const fresh=!!latestBusPosition.last_update_ts && Date.now()-latestBusPosition.last_update_ts<=120000;
+  if(!fresh) return;
+  osmMap.setView([latestBusPosition.lat,latestBusPosition.lng],16,{animate:true});
+}
 
 function applyLiveStatus(data){
   if(!data || data.bus_id !== LIVE_CONFIG.busId) return;
   liveReceivedAt = Date.now();
+  latestBusPosition=data;
+  updateLiveBusMarker(data);
   const hasLiveUpdate=!!data.last_update_ts && Date.now()-data.last_update_ts<=120000;
   const routeTitle=document.querySelector('.ac-route');
   if(routeTitle && data.route_name) routeTitle.textContent=data.route_name;
@@ -1363,6 +1414,7 @@ function initOsmMap(){
   }).addTo(osmMap);
   document.getElementById('osmMapStatus').classList.add('hidden');
   setTimeout(()=>osmMap.invalidateSize(),0);
+  if(latestBusPosition) updateLiveBusMarker(latestBusPosition);
   if(pendingRoute){
     const route=pendingRoute;
     pendingRoute=null;
