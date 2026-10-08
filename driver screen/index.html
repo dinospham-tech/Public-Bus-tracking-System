@@ -190,6 +190,24 @@
             font-weight: 800
         }
 
+        .driver-status-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px
+        }
+
+        .location-enable {
+            border: 0;
+            padding: 3px 6px;
+            background: transparent;
+            color: #a8c7ff;
+            font: 600 10px "Space Grotesk", sans-serif;
+            cursor: pointer
+        }
+
+        .location-enable[hidden] { display: none }
+
         .dot {
             width: 7px;
             height: 7px;
@@ -950,7 +968,10 @@
                             <div class="id" id="driverId">ID: DRV-2847 · Bus WB-04A-2147</div>
                         </div>
                     </div>
-                    <div class="shift" id="dutyStatus"><i class="dot"></i> DUTY ACTIVE</div>
+                    <div class="driver-status-stack">
+                        <div class="shift" id="dutyStatus"><i class="dot"></i> DUTY ACTIVE</div>
+                        <button class="location-enable" id="locationEnableButton" type="button" onclick="requestLocationAccess()">Enable phone location</button>
+                    </div>
                 </div>
                 <div class="route-title"><span id="routeInfo">ROUTE 42A · KOLKATA CITY</span><strong
                         id="stopProgress">3/7 STOPS</strong></div>
@@ -1252,6 +1273,9 @@
             dutyActive: true,
             wsConnection: null,
             wsPingTimer: null,
+            telemetryInFlight: false,
+            locationErrorMessage: '',
+            locationSharingStarted: false,
         };
 
         // ============================================
@@ -1283,32 +1307,64 @@
         }
 
         // ============================================
-        // TELEMETRY SIMULATION (GPS + Speed)
+        // DEVICE GPS LOCATION
         // ============================================
-        function simulateGPS() {
-            state.currentSpeed = 20 + Math.random() * 30; // 20-50 km/h
-
-            const targetIndex = Math.min(state.completedStops + 1, state.routeStations.length - 1);
-            const target = state.routeStations[targetIndex];
-            if (target) {
-                const lat1 = state.currentLat * Math.PI / 180;
-                const lat2 = target.lat * Math.PI / 180;
-                const dLat = lat2 - lat1;
-                const dLng = (target.lng - state.currentLng) * Math.PI / 180;
-                const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-                const distanceKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                const stepKm = state.currentSpeed * (CONFIG.UPDATE_INTERVAL / 1000) / 3600;
-                const fraction = distanceKm > 0 ? Math.min(1, stepKm / distanceKm) : 1;
-                state.currentLat += (target.lat - state.currentLat) * fraction;
-                state.currentLng += (target.lng - state.currentLng) * fraction;
+        async function getDeviceTelemetry() {
+            if (!navigator.geolocation) {
+                showLocationError('This browser does not support device location.');
+                return null;
             }
 
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        maximumAge: 5000,
+                        timeout: 15000,
+                    });
+                });
+                state.currentLat = position.coords.latitude;
+                state.currentLng = position.coords.longitude;
+                state.currentSpeed = Number.isFinite(position.coords.speed)
+                    ? Math.max(0, position.coords.speed * 3.6)
+                    : 0;
+                state.locationErrorMessage = '';
+                return {
+                    bus_id: state.busId,
+                    route_id: state.routeId,
+                    lat: state.currentLat,
+                    lng: state.currentLng,
+                    speed_kmh: Math.round(state.currentSpeed),
+                    timestamp: Math.floor(Date.now() / 1000),
+                };
+            } catch (error) {
+                const message = error.code === 1
+                    ? 'Location permission is blocked. Allow location access in your browser settings.'
+                    : error.code === 2
+                        ? 'The phone could not determine its location. Check that location services are on.'
+                        : 'Location request timed out. Keep this app open and try again.';
+                showLocationError(message);
+                return null;
+            }
+        }
+
+        function showLocationError(message) {
+            if (state.locationErrorMessage !== message) toast(message);
+            state.locationErrorMessage = message;
+        }
+
+        function requestLocationAccess() {
+            state.locationErrorMessage = '';
+            return sendTelemetry();
+        }
+
+        function lastKnownTelemetry() {
             return {
                 bus_id: state.busId,
                 route_id: state.routeId,
                 lat: state.currentLat,
                 lng: state.currentLng,
-                speed_kmh: Math.round(state.currentSpeed),
+                speed_kmh: 0,
                 timestamp: Math.floor(Date.now() / 1000),
             };
         }
@@ -1317,7 +1373,12 @@
         // SEND TELEMETRY TO BACKEND
         // ============================================
         async function sendTelemetry(action = 'update') {
-            const telemetryData = simulateGPS();
+            if (state.telemetryInFlight) return null;
+            state.telemetryInFlight = true;
+            try {
+            const deviceTelemetry = await getDeviceTelemetry();
+            const telemetryData = deviceTelemetry || (action === 'update' ? null : lastKnownTelemetry());
+            if (!telemetryData) return null;
 
             if (action === 'reached') {
                 toast('📍 Marking stop as reached...');
@@ -1335,9 +1396,17 @@
             if (result) {
                 console.log('Telemetry accepted:', result);
                 updateUI(result);
+                    if (!state.locationSharingStarted && deviceTelemetry) {
+                        state.locationSharingStarted = true;
+                        document.getElementById('locationEnableButton').hidden = true;
+                        toast('Phone location sharing started');
+                    }
                 return result;
             }
             return null;
+            } finally {
+                state.telemetryInFlight = false;
+            }
         }
 
         // ============================================
