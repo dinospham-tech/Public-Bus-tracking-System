@@ -1115,6 +1115,7 @@ body.dark-mode .nearby-board-head p,.dark-mode .nearby-bus-meta,.dark-mode .near
 <script>
 document.querySelectorAll('#sec-mapview svg:not(.search-icon)').forEach(map => map.remove());
 
+const LIVE_CONFIG = { apiUrl: window.BUS_API_URL || (window.location.protocol === 'file:' ? `http://${window.location.hostname || 'localhost'}:8000` : window.location.origin), busId: 'bus-001', routeId: 'demo' };
 let liveSocket;
 let liveRetryTimer;
 let liveReceivedAt = 0;
