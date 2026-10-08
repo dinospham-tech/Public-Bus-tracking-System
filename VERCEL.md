@@ -12,7 +12,7 @@ Each app gets its own Vercel URL, manifest, icon, and standalone mobile home-scr
 1. Deploy the existing `genesis-citybus` web service from `render.yaml` on Render.
 2. Create a Vercel project for the customer app. Set its Root Directory to `customer screen` and its framework preset to **Other**.
 3. Create a second Vercel project for the driver app. Set its Root Directory to `driver screen` and its framework preset to **Other**.
-4. In **both** Vercel projects, add `BUS_API_URL` for Production, Preview, and Development. Set it to the Render service origin, such as `https://your-service.onrender.com`, without a path.
+4. In **both** Vercel projects, add `BUS_API_URL` for Production, Preview, and Development. Set it to `https://public-bus-tracking-system.onrender.com`.
 5. If you use a custom `DEVICE_API_KEY` on Render, add the same value to the driver Vercel project's environment variables.
 6. Deploy both projects. Each local `vercel.json` builds that app as a standalone mobile web app and injects the backend configuration.
 
