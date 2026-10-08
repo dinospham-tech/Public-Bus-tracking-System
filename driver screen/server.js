@@ -12,9 +12,10 @@ const { distanceKm, etaMinutes } = require('./geo');
 const PORT = process.env.PORT || 8000;
 const DEVICE_API_KEY = process.env.DEVICE_API_KEY || 'your-secret-device-key-here';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+const CORS_ORIGINS = CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean);
 
 const app = express();
-app.use(cors({ origin: CORS_ORIGIN }));
+app.use(cors({ origin: CORS_ORIGINS.includes('*') ? '*' : CORS_ORIGINS }));
 app.use(express.json());
 
 app.get('/', (req, res) => {

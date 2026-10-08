@@ -1,0 +1,12 @@
+{
+  "id": "/",
+  "name": "DriveOps Driver",
+  "short_name": "DriveOps",
+  "description": "Driver trip console and live bus location sharing.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0e0e1a",
+  "theme_color": "#0e0e1a",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

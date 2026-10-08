@@ -1,0 +1,12 @@
+{
+  "id": "/",
+  "name": "CityBus Passenger",
+  "short_name": "CityBus",
+  "description": "Live bus arrivals and tracking for passengers.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#DCE6F5",
+  "theme_color": "#1A3A6B",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

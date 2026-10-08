@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "node scripts/build-vercel.js",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/", "destination": "/customer/index.html" },
+    { "source": "/customer", "destination": "/customer/index.html" },
+    { "source": "/driver", "destination": "/driver/index.html" }
+  ]
+}

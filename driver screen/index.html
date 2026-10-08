@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0e0e1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="DriveOps Driver">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <title>DriveOps — Driver App</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
@@ -1222,10 +1226,10 @@
         // CONFIGURATION
         // ============================================
         const CONFIG = {
-            API_URL: window.location.protocol === 'file:'
+            API_URL: window.BUS_API_URL || (window.location.protocol === 'file:'
                 ? `http://${window.location.hostname || 'localhost'}:8000`
-                : window.location.origin,
-            DEVICE_KEY: 'your-secret-device-key-here', // Must match backend DEVICE_API_KEY
+                : window.location.origin),
+            DEVICE_KEY: window.BUS_DEVICE_KEY || 'your-secret-device-key-here', // Must match backend DEVICE_API_KEY
             BUS_ID: 'bus-001',
             ROUTE_ID: 'demo',
             UPDATE_INTERVAL: 5000, // 5 seconds
@@ -1695,6 +1699,7 @@
 
         // Start the app
         document.addEventListener('DOMContentLoaded', init);
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(() => {});
 
         // ============================================
         // KEYBOARD SHORTCUTS (for testing)
